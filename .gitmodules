@@ -1,0 +1,9 @@
+[submodule "lib/khttp"]
+	path = lib/khttp
+	url = git@github.com:kaija/khttp.git
+	ignore = dirty
+
+[submodule "lib/parson"]
+	path = lib/parson
+	url = git@github.com:kgabis/parson.git
+	ignore = dirty
