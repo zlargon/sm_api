@@ -1,4 +1,4 @@
-CFLAGS= -I. -I../ -Werror
+CFLAGS= -I. -I../
 LDFLAGS=-lssl -lcrypto            \
         ../lib/khttp/libkhttp.a   \
         ../lib/parson/parson.c    \

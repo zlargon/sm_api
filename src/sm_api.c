@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/sha.h>
 #include "sm_api.h"
 
 /** Third Party Library **/
 #include "../lib/khttp/khttp.h"
 #include "../lib/khttp/http_parser.h"
 #include "../lib/parson/parson.h"
+
+#define SM_SHA1_LEN  SHA_DIGEST_LENGTH * 2 + 1
 
 #define STRINGIFY(s) #s
 #define sm_check_string(var) __sm_check_string(var, STRINGIFY(var), __func__)
@@ -15,6 +18,8 @@
 #define _return(ret) _ret = ret; goto _return;
 int __sm_check_string(const char * var, const char * var_name, const char * func);
 int __sm_check_not_null(const void * var, const char * var_name, const char * func);
+int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
+int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time);
 
 
 /** USER API **/
@@ -364,4 +369,40 @@ int __sm_check_not_null(const void * var, const char * var_name, const char * fu
         return -1;
     }
     return 0;
+}
+
+int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]) {
+    // check arguments
+    if (sm_check_string(string) ||
+        sm_check_not_null(sha1) != 0) {
+        return -1;
+    }
+    memset(sha1, 0, SM_SHA1_LEN);
+
+    // generate bytes sha1
+    unsigned char bytes[SHA_DIGEST_LENGTH] = {0};
+    SHA1((const unsigned char *)string, strlen(string), bytes);
+
+    // convert bytes to string
+    int i;
+    for (i = 0; i < SHA_DIGEST_LENGTH; i++) {
+        sprintf(sha1 + i * 2, "%02x", bytes[i]);
+    }
+
+    return 0;
+}
+
+int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time) {
+    if (sm_check_string(api_secret)     ||
+        sm_check_not_null(api_token)    ||
+        sm_check_not_null(current_time) != 0) {
+        return -1;
+    }
+    memset(api_token, 0, SM_SHA1_LEN);
+    *current_time = time(NULL);
+
+    char string[128] = {0};
+    snprintf(string, 128, "%s%ld", api_secret, *current_time);
+
+    return sm_crypto_SHA1((const char*)string, api_token);
 }
