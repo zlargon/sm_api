@@ -264,6 +264,133 @@ json_parse_failure:
     return -1;
 }
 
+// 20. sm_user_get_service_all
+int sm_user_get_service_all(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        SM_Service_Info * service_info) {
+
+    // check arguments
+    if (sm_check_string(server_url)     ||
+        sm_check_string(token)          ||
+        sm_check_string(api_key)        ||
+        sm_check_not_null(service_info) != 0) {
+        return -1;
+    }
+    memset(service_info, 0, sizeof(SM_Service_Info));
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/user/get_service_all", server_url);
+
+    // set post body
+    char post_body[2048] = {0};
+    snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s", token, api_key);
+
+    khttp_ctx *ctx = khttp_new();                                               /* alloc: ctx */
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        khttp_destroy(ctx);                                                     /* free: ctx */
+        return ret;
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        khttp_destroy(ctx);                                                     /* free: ctx */
+        return ctx->hp.status_code;
+    }
+
+    // JSON parse
+    JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
+    if (root_value == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        khttp_destroy(ctx);                                                     /* free: ctx */
+        return -1;
+    }
+
+    // check the JSON type
+    if (json_value_get_type(root_value) != JSONObject) {
+        goto json_parse_failure;                                                /* free: root_value, ctx */
+    }
+
+    // get JSON Object
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        goto json_parse_failure;                                                /* free: root_value, ctx */
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 1200) {
+        printf("body = %s\n", (const char *)ctx->body);
+        json_value_free(root_value);
+        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
+        return statusCode;
+    }
+
+    // get MSG, RELAY, CVR value
+    const char * mqtt_id                = json_object_dotget_string(json_body, "MSG.account.id");
+    const char * mqtt_pwd               = json_object_dotget_string(json_body, "MSG.account.pwd");
+    const char * mqtt_server            = json_object_dotget_string(json_body, "MSG.profile.mqtt_server");
+    const char * mqtt_server_port       = json_object_dotget_string(json_body, "MSG.profile.mqtt_server_port");
+    const char * mqtt_client_id         = json_object_dotget_string(json_body, "MSG.profile.client_id");
+    const char * mqtt_topic             = json_object_dotget_string(json_body, "MSG.profile.topic");
+    const char * mqtt_system_topic      = json_object_dotget_string(json_body, "MSG.profile.system_notification_topic");
+
+    const char * relay_id               = json_object_dotget_string(json_body, "RELAY.account.id");
+    const char * relay_pwd              = json_object_dotget_string(json_body, "RELAY.account.pwd");
+    const char * relay_server           = json_object_dotget_string(json_body, "RELAY.profile.relay_server");
+    const char * relay_server_port      = json_object_dotget_string(json_body, "RELAY.profile.relay_server_port");
+
+    const char * cvr_id                 = json_object_dotget_string(json_body, "CVR.account.id");
+    const char * cvr_pwd                = json_object_dotget_string(json_body, "CVR.account.pwd");
+    const char * media_server           = json_object_dotget_string(json_body, "CVR.profile.media_server");
+    const char * media_server_port      = json_object_dotget_string(json_body, "CVR.profile.media_server_port");
+    const char * media_server_live_port = json_object_dotget_string(json_body, "CVR.profile.media_server_liveport");
+
+    // copy the value to 'service_info'
+    if (mqtt_id                != NULL) strncpy(service_info->mqtt.id,           mqtt_id,           SM_SERVICE_ID_LEN);
+    if (mqtt_pwd               != NULL) strncpy(service_info->mqtt.pwd,          mqtt_pwd,          SM_SERVICE_PWD_LEN);
+    if (mqtt_server            != NULL) strncpy(service_info->mqtt.server,       mqtt_server,       SM_SERVICE_SERVER_LEN);
+    if (mqtt_server_port       != NULL) service_info->mqtt.port = atoi(mqtt_server_port);
+    if (mqtt_client_id         != NULL) strncpy(service_info->mqtt.client_id,    mqtt_client_id,    SM_SERVICE_MQTT_CLINET_ID_LEN);
+    if (mqtt_topic             != NULL) strncpy(service_info->mqtt.topic,        mqtt_topic,        SM_SERVICE_MQTT_TOPIC_LEN);
+    if (mqtt_system_topic      != NULL) strncpy(service_info->mqtt.system_topic, mqtt_system_topic, SM_SERVICE_MQTT_TOPIC_LEN);
+
+    if (relay_id               != NULL) strncpy(service_info->relay.id,          relay_id,          SM_SERVICE_ID_LEN);
+    if (relay_pwd              != NULL) strncpy(service_info->relay.pwd,         relay_pwd,         SM_SERVICE_PWD_LEN);
+    if (relay_server           != NULL) strncpy(service_info->relay.server,      relay_server,      SM_SERVICE_SERVER_LEN);
+    if (relay_server_port      != NULL) service_info->relay.port = atoi(relay_server_port);
+
+    if (cvr_id                 != NULL) strncpy(service_info->cvr.id,            cvr_id,            SM_SERVICE_ID_LEN);
+    if (cvr_pwd                != NULL) strncpy(service_info->cvr.pwd,           cvr_pwd,           SM_SERVICE_PWD_LEN);
+    if (media_server           != NULL) strncpy(service_info->media.server,      media_server,      SM_SERVICE_SERVER_LEN);
+    if (media_server_port      != NULL) service_info->media.port      = atoi(media_server_port);
+    if (media_server_live_port != NULL) service_info->media.live_port = atoi(media_server_live_port);
+
+    json_value_free(root_value);
+    khttp_destroy(ctx);                                                         /* free: root_value, ctx */
+    return 0;
+
+json_parse_failure:
+    printf("%s: JSON parse failed\n", __func__);    // Error Level
+    printf("body = %s\n", (const char *)ctx->body);
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return -1;
+}
+
 
 /** Internal Function **/
 

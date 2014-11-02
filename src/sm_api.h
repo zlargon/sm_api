@@ -116,4 +116,22 @@ int sm_user_get_service_info(
         const char * service,
         SM_Service_Info * service_info);
 
+/* 20. sm_user_get_service_all
+ * https://docs.google.com/a/gemteks.com/document/d/1O0_ItXjhFbenkJ17cLVSuKn3XTPHUun-q7B4dGVB9iE/edit#heading=h.4js1iuaksnd2
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param service_info
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_user_get_service_all(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        SM_Service_Info * service_info);
+
 #endif
