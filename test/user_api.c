@@ -37,7 +37,25 @@ int test_user_digest_login() {
     return 0;
 }
 
+int test_user_get_service_info() {
+    SM_Service_Info service_info = {0};
+
+    puts("\n12. sm_user_get_service_info: MSG");
+    if (sm_user_get_service_info(Global.server_url, Global.token, "HA-45058956", "MSG", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n", service_info.mqtt.id);
+    printf("         pwd = %s\n", service_info.mqtt.pwd);
+    printf("      server = %s\n", service_info.mqtt.server);
+    printf("        port = %d\n", service_info.mqtt.port);
+    printf("   client_id = %s\n", service_info.mqtt.client_id);
+    printf("       topic = %s\n", service_info.mqtt.topic);
+    printf("system_topic = %s\n", service_info.mqtt.system_topic);
+    return 0;
+}
+
 int main() {
     test_user_digest_login();
+    test_user_get_service_info();
     return EXIT_SUCCESS;
 }
