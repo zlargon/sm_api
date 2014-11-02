@@ -219,7 +219,34 @@ int sm_user_get_service_info(
         if (mqtt_system_topic != NULL) strncpy(service_info->mqtt.system_topic, mqtt_system_topic, SM_SERVICE_MQTT_TOPIC_LEN);
     }
 
-    // TODO: RELAY, CVR
+    else if (strcmp(service, "RELAY") == 0) {
+        const char * relay_id          = json_object_dotget_string(json_body, "info.account.id");
+        const char * relay_pwd         = json_object_dotget_string(json_body, "info.account.pwd");
+        const char * relay_server      = json_object_dotget_string(json_body, "info.profile.relay_server");
+        const char * relay_server_port = json_object_dotget_string(json_body, "info.profile.relay_server_port");
+
+        // copy the value to 'service_info->relay'
+        if (relay_id          != NULL) strncpy(service_info->relay.id,     relay_id,     SM_SERVICE_ID_LEN);
+        if (relay_pwd         != NULL) strncpy(service_info->relay.pwd,    relay_pwd,    SM_SERVICE_PWD_LEN);
+        if (relay_server      != NULL) strncpy(service_info->relay.server, relay_server, SM_SERVICE_SERVER_LEN);
+        if (relay_server_port != NULL) service_info->relay.port = atoi(relay_server_port);
+    }
+
+    else if (strcmp(service, "CVR") == 0) {
+        const char * cvr_id                 = json_object_dotget_string(json_body, "info.account.id");
+        const char * cvr_pwd                = json_object_dotget_string(json_body, "info.account.pwd");
+        const char * media_server           = json_object_dotget_string(json_body, "info.profile.media_server");
+        const char * media_server_port      = json_object_dotget_string(json_body, "info.profile.media_server_port");
+        const char * media_server_live_port = json_object_dotget_string(json_body, "info.profile.media_server_liveport");
+
+        // copy the value to 'service_info->cvr'
+        if (cvr_id                 != NULL) strncpy(service_info->cvr.id,       cvr_id,       SM_SERVICE_ID_LEN);
+        if (cvr_pwd                != NULL) strncpy(service_info->cvr.pwd,      cvr_pwd,      SM_SERVICE_PWD_LEN);
+        if (media_server           != NULL) strncpy(service_info->media.server, media_server, SM_SERVICE_SERVER_LEN);
+        if (media_server_port      != NULL) service_info->media.port      = atoi(media_server_port);
+        if (media_server_live_port != NULL) service_info->media.live_port = atoi(media_server_live_port);
+    }
+
     else {
         printf("%s: not support service '%s' JSON parsing\n", __func__, service);
         printf("body = %s\n", (const char *)ctx->body);

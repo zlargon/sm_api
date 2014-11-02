@@ -6,17 +6,31 @@
 // Global Variable
 static struct {
     const char * server_url;
+    const char * api_key;
+    const char * api_secret;
+    const char * username;
+    const char * password;
+    const char * mobile_id;
+    const char * app_id;
+
     char uid   [SM_USER_UID_LEN];
     char token [SM_USER_TOKEN_LEN];
+
 } Global = {
-    .server_url = "https://s5.securepilot.com"
+    .server_url = "https://s5.securepilot.com",
+    .api_key    = "HA-45058956",
+    .api_secret = "0744424235",
+    .username   = "test_account",
+    .password   = "gemtek2014",
+    .mobile_id  = "863664029282422",
+    .app_id     = "com.gemtek.sample"
 };
 
 int test_user_digest_login() {
     puts("\n06. sm_user_digest_login");
 
     SM_User_Account user_account = {0};
-    if (sm_user_digest_login(Global.server_url, "test_account", "gemtek2014", "863664029282422", "com.gemtek.sample", &user_account) != 0) {
+    if (sm_user_digest_login(Global.server_url, (char *)Global.username, (char *)Global.password, Global.mobile_id, Global.app_id, &user_account) != 0) {
         return -1;
     }
 
@@ -40,8 +54,9 @@ int test_user_digest_login() {
 int test_user_get_service_info() {
     SM_Service_Info service_info = {0};
 
+    // MSG
     puts("\n12. sm_user_get_service_info: MSG");
-    if (sm_user_get_service_info(Global.server_url, Global.token, "HA-45058956", "MSG", &service_info) != 0) {
+    if (sm_user_get_service_info(Global.server_url, Global.token, Global.api_key, "MSG", &service_info) != 0) {
         return -1;
     }
     printf("          id = %s\n", service_info.mqtt.id);
@@ -51,6 +66,27 @@ int test_user_get_service_info() {
     printf("   client_id = %s\n", service_info.mqtt.client_id);
     printf("       topic = %s\n", service_info.mqtt.topic);
     printf("system_topic = %s\n", service_info.mqtt.system_topic);
+
+    // RELAY
+    puts("\n12. sm_user_get_service_info: RELAY");
+    if (sm_user_get_service_info(Global.server_url, Global.token, Global.api_key, "RELAY", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n", service_info.relay.id);
+    printf("         pwd = %s\n", service_info.relay.pwd);
+    printf("      server = %s\n", service_info.relay.server);
+    printf("        port = %d\n", service_info.relay.port);
+
+    // CVR
+    puts("\n12. sm_user_get_service_info: CVR");
+    if (sm_user_get_service_info(Global.server_url, Global.token, Global.api_key, "CVR", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n", service_info.cvr.id);
+    printf("         pwd = %s\n", service_info.cvr.pwd);
+    printf("      server = %s\n", service_info.media.server);
+    printf("        port = %d\n", service_info.media.port);
+    printf("   live_port = %d\n", service_info.media.live_port);
     return 0;
 }
 
