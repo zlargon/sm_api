@@ -22,8 +22,8 @@ int __sm_check_not_null(const void * var, const char * var_name, const char * fu
 // 06. sm_user_digest_login
 int sm_user_digest_login(
         const char * server_url,
-  /* const */ char * username,
-  /* const */ char * password,
+        const char * username,
+        const char * password,
         const char * device_id,
         const char * app_identifier,
         SM_User_Account * user_account) {
@@ -50,7 +50,7 @@ int sm_user_digest_login(
 
     ctx = khttp_new();
     khttp_set_uri(ctx, url);
-    khttp_set_username_password(ctx, username, password, KHTTP_AUTH_DIGEST);
+    khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
     int ret = khttp_perform(ctx);
     if (ret != 0) {

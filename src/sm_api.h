@@ -89,8 +89,8 @@ typedef struct {
  */
 int sm_user_digest_login(
         const char * server_url,
-  /* const */ char * username,
-  /* const */ char * password,
+        const char * username,
+        const char * password,
         const char * device_id,
         const char * app_identifier,
         SM_User_Account * user_account);
