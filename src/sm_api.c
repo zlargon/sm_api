@@ -12,6 +12,7 @@
 #define sm_check_string(var) __sm_check_string(var, STRINGIFY(var), __func__)
 #define sm_check_not_null(var) __sm_check_not_null(var, STRINGIFY(var), __func__)
 
+#define _return(ret) _ret = ret; goto _return;
 int __sm_check_string(const char * var, const char * var_name, const char * func);
 int __sm_check_not_null(const void * var, const char * var_name, const char * func);
 
@@ -27,6 +28,10 @@ int sm_user_digest_login(
         const char * app_identifier,
         SM_User_Account * user_account) {
 
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(username)       ||
@@ -34,7 +39,7 @@ int sm_user_digest_login(
         sm_check_string(device_id)      ||
         sm_check_string(app_identifier) ||
         sm_check_not_null(user_account) != 0) {
-        return -1;
+        _return(-1);
     }
 
     memset(user_account, 0, sizeof(SM_User_Account));
@@ -43,14 +48,13 @@ int sm_user_digest_login(
     char url[SM_URL_LEN] = {0};
     snprintf(url, sizeof(url), "%s/v1/user/login?device_id=%s&app_identifier=%s", server_url, device_id, app_identifier);
 
-    khttp_ctx *ctx = khttp_new();                                              /* alloc: ctx */
+    ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_username_password(ctx, username, password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
     int ret = khttp_perform(ctx);
     if (ret != 0) {
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ret;
+        _return(ret);
     }
 
     // check HTTP status code
@@ -59,28 +63,23 @@ int sm_user_digest_login(
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ctx->hp.status_code;
+        _return(ctx->hp.status_code);
     }
 
     // JSON parse
-    JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
+    root_value = json_parse_string((const char *)ctx->body);
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
         printf("%s: JSON parse failed\n", __func__);    // Error Level
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return -1;
+        _return(-1);
     }
 
     // check status code
     int statusCode = (int) json_object_dotget_number(json_body, "status.code");
     if (statusCode != 1211) {
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return statusCode;
+        _return(statusCode);
     }
 
     const char * uid        = json_object_dotget_string(json_body, "info.account.uid");
@@ -101,9 +100,12 @@ int sm_user_digest_login(
     if (token      != NULL) strncpy(user_account->token,      token,      SM_USER_TOKEN_LEN);
     if (expiration != NULL) strncpy(user_account->expiration, expiration, SM_USER_EXPIRATION_LEN);
 
-    json_value_free(root_value);
-    khttp_destroy(ctx);                                                         /* free: root_value, ctx */
-    return 0;
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
 }
 
 // 12. sm_user_get_service_info
@@ -114,13 +116,17 @@ int sm_user_get_service_info(
         const char * service,
         SM_Service_Info * service_info) {
 
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_string(service)        ||
         sm_check_not_null(service_info) != 0) {
-        return -1;
+        _return(-1);
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -132,7 +138,7 @@ int sm_user_get_service_info(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s&service=%s", token, api_key, service);
 
-    khttp_ctx *ctx = khttp_new();                                               /* alloc: ctx */
+    ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
@@ -140,8 +146,7 @@ int sm_user_get_service_info(
 
     int ret = khttp_perform(ctx);
     if (ret != 0) {
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ret;
+        _return(ret);
     }
 
     // check HTTP status code
@@ -150,28 +155,23 @@ int sm_user_get_service_info(
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ctx->hp.status_code;
+        _return(ctx->hp.status_code);
     }
 
     // JSON parse
-    JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
+    root_value = json_parse_string((const char *)ctx->body);
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
         printf("%s: JSON parse failed\n", __func__);    // Error Level
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return -1;
+        _return(-1);
     }
 
     // check status code
     int statusCode = (int) json_object_dotget_number(json_body, "status.code");
     if (statusCode != 1211) {
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return statusCode;
+        _return(statusCode);
     }
 
     // get MSG, RELAY, CVR field
@@ -227,9 +227,12 @@ int sm_user_get_service_info(
         printf("body = %s\n", (const char *)ctx->body);
     }
 
-    json_value_free(root_value);
-    khttp_destroy(ctx);                                                         /* free: root_value, ctx */
-    return 0;
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
 }
 
 // 20. sm_user_get_service_all
@@ -239,12 +242,16 @@ int sm_user_get_service_all(
         const char * api_key,
         SM_Service_Info * service_info) {
 
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_not_null(service_info) != 0) {
-        return -1;
+        _return(-1);
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -256,7 +263,7 @@ int sm_user_get_service_all(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s", token, api_key);
 
-    khttp_ctx *ctx = khttp_new();                                               /* alloc: ctx */
+    ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
@@ -264,8 +271,7 @@ int sm_user_get_service_all(
 
     int ret = khttp_perform(ctx);
     if (ret != 0) {
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ret;
+        _return(ret);
     }
 
     // check HTTP status code
@@ -274,28 +280,23 @@ int sm_user_get_service_all(
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return ctx->hp.status_code;
+        _return(ctx->hp.status_code);
     }
 
     // JSON parse
-    JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
+    root_value = json_parse_string((const char *)ctx->body);
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
         printf("%s: JSON parse failed\n", __func__);    // Error Level
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return -1;
+        _return(-1);
     }
 
     // check status code
     int statusCode = (int) json_object_dotget_number(json_body, "status.code");
     if (statusCode != 1200) {
         printf("body = %s\n", (const char *)ctx->body);
-        json_value_free(root_value);
-        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
-        return statusCode;
+        _return(statusCode);
     }
 
     // get MSG, RELAY, CVR value
@@ -338,9 +339,12 @@ int sm_user_get_service_all(
     if (media_server_port      != NULL) service_info->media.port      = atoi(media_server_port);
     if (media_server_live_port != NULL) service_info->media.live_port = atoi(media_server_live_port);
 
-    json_value_free(root_value);
-    khttp_destroy(ctx);                                                         /* free: root_value, ctx */
-    return 0;
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
 }
 
 
