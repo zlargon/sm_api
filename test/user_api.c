@@ -119,9 +119,28 @@ int test_user_get_service_all() {
     return 0;
 }
 
+int test_mec_send_message() {
+    puts("\n01. sm_mec_send_message");
+    int ret = sm_mec_send_message(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        Global.api_secret,
+        SM_MQTT_OQS_AT_LEAST_ONCE,
+        SM_MQTT_SEND_TYPE_RELIABLE,
+        86400000,
+        "700007507",
+        "Test Send Message"
+    );
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
+}
+
 int main() {
     test_user_digest_login();
     test_user_get_service_info();
     test_user_get_service_all();
+    test_mec_send_message();
     return EXIT_SUCCESS;
 }

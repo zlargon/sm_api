@@ -14,8 +14,8 @@
 #define STRINGIFY(s) #s
 #define sm_check_string(var) __sm_check_string(var, STRINGIFY(var), __func__)
 #define sm_check_not_null(var) __sm_check_not_null(var, STRINGIFY(var), __func__)
-
 #define _return(ret) _ret = ret; goto _return;
+
 int __sm_check_string(const char * var, const char * var_name, const char * func);
 int __sm_check_not_null(const void * var, const char * var_name, const char * func);
 int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
@@ -347,6 +347,135 @@ int sm_user_get_service_all(
     _return(0);
 
 _return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
+
+/** MEC API **/
+
+// 01. sm_mec_send_message
+int sm_mec_send_message(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        int          qos,
+        int          send_type,
+        long         expire,
+        const char * target_id,
+        const char * message) {
+
+    int _ret;
+    char * post_body = NULL;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(token)      ||
+        sm_check_string(api_key)    ||
+        sm_check_string(api_secret) ||
+        sm_check_string(target_id)  ||
+        sm_check_string(message)    != 0) {
+        _return(-1);
+    }
+
+    if (qos != SM_MQTT_OQS_AT_MOST_ONCE  &&
+        qos != SM_MQTT_OQS_AT_LEAST_ONCE &&
+        qos != SM_MQTT_OQS_AT_EXACTLY_ONCE) {
+        printf("%s: qos (%d) should be %s(%d), %s(%d) or %s(%d)\n", __func__, qos,
+            STRINGIFY(SM_MQTT_OQS_AT_MOST_ONCE),    SM_MQTT_OQS_AT_MOST_ONCE,
+            STRINGIFY(SM_MQTT_OQS_AT_LEAST_ONCE),   SM_MQTT_OQS_AT_LEAST_ONCE,
+            STRINGIFY(SM_MQTT_OQS_AT_EXACTLY_ONCE), SM_MQTT_OQS_AT_EXACTLY_ONCE
+        );
+        _return(-1);
+    }
+
+    if (send_type != SM_MQTT_SEND_TYPE_RELIABLE &&
+        send_type != SM_MQTT_SEND_TYPE_REALTIME) {
+        printf("%s: send_type (%d) should be %s(%d) or %s(%d)\n", __func__, send_type,
+            STRINGIFY(SM_MQTT_SEND_TYPE_RELIABLE), SM_MQTT_SEND_TYPE_RELIABLE,
+            STRINGIFY(SM_MQTT_SEND_TYPE_REALTIME), SM_MQTT_SEND_TYPE_REALTIME
+        );
+        _return(-1);
+    }
+
+    if (expire < 0) {
+        printf("%s: expire (%ld) should not be negative\n", __func__, expire);
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/mec_msg/v1/send", server_url);
+
+    // generate 'current_time' and 'api_token'
+    time_t current_time = 0;
+    char api_token[SM_SHA1_LEN] = {0};
+    sm_generate_api_token(api_secret, api_token, &current_time);
+
+    // set post body
+    size_t post_body_len = strlen(message) + 512;
+    post_body = (char *)calloc(post_body_len, sizeof(char));
+    if (post_body == NULL) {
+        printf("%s: out of memory\n", __func__);
+        _return(-1);
+    }
+    snprintf(post_body, post_body_len,
+        "token=%s&api_key=%s&api_token=%s&time=%ld&qos=%d&type=%d&expire=%ld&dst=%s&text=%s",
+        token,
+        api_key,
+        api_token,
+        current_time,
+        qos,
+        send_type,
+        expire,
+        target_id,
+        message
+    );
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        _return(ret);
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ctx->hp.status_code);
+    }
+
+    // JSON parse
+    root_value = json_parse_string((const char *)ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(-1);
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 2221) {
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(statusCode);
+    }
+
+    _return(0);
+
+_return:
+    if (post_body  != NULL) free((void *)post_body);
     if (root_value != NULL) json_value_free(root_value);
     if (ctx        != NULL) khttp_destroy(ctx);
     return _ret;

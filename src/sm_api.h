@@ -134,4 +134,52 @@ int sm_user_get_service_all(
         const char * api_key,
         SM_Service_Info * service_info);
 
+
+/** MEC API **/
+
+enum SM_MQTT_OQS {
+    SM_MQTT_OQS_AT_MOST_ONCE    = 0,
+    SM_MQTT_OQS_AT_LEAST_ONCE   = 1,
+    SM_MQTT_OQS_AT_EXACTLY_ONCE = 2
+};
+
+enum SM_MQTT_SEND_TYPE {
+    SM_MQTT_SEND_TYPE_RELIABLE  = 0,
+    SM_MQTT_SEND_TYPE_REALTIME  = 1
+};
+
+/* 01. sm_mec_send_message
+ * https://docs.google.com/a/gemteks.com/document/d/1rcvGr_lrOClHl2cI5TwV8XByEW4tCaK7O5MlxSnHer4/edit#heading=h.9a1nn85am3gi
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param api_secret
+ * @param qos        enum SM_MQTT_OQS:
+ *                   SM_MQTT_OQS_AT_MOST_ONCE    (0) : at most once
+ *                   SM_MQTT_OQS_AT_LEAST_ONCE   (1) : at least once
+ *                   SM_MQTT_OQS_AT_EXACTLY_ONCE (2) : exactly once
+ *
+ * @param send_type  enum SM_MQTT_SEND_TYPE:
+ *                   SM_MQTT_SEND_TYPE_RELIABLE  (0) : notify and get
+ *                   SM_MQTT_SEND_TYPE_REALTIME  (1) : push only
+ * @param expire
+ * @param target_id
+ * @param message
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_mec_send_message(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        int          qos,
+        int          send_type,
+        long         expire,
+        const char * target_id,
+        const char * message);
+
 #endif
