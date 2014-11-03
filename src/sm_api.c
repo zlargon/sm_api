@@ -65,22 +65,13 @@ int sm_user_digest_login(
 
     // JSON parse
     JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
-    if (root_value == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return -1;
-    }
-
-    // check the JSON type
-    if (json_value_get_type(root_value) != JSONObject) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
-    }
-
-    // get JSON Object
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        json_value_free(root_value);
+        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
+        return -1;
     }
 
     // check status code
@@ -113,13 +104,6 @@ int sm_user_digest_login(
     json_value_free(root_value);
     khttp_destroy(ctx);                                                         /* free: root_value, ctx */
     return 0;
-
-json_parse_failure:
-    printf("%s: JSON parse failed\n", __func__);    // Error Level
-    printf("body = %s\n", (const char *)ctx->body);
-    json_value_free(root_value);
-    khttp_destroy(ctx);
-    return -1;
 }
 
 // 12. sm_user_get_service_info
@@ -172,22 +156,13 @@ int sm_user_get_service_info(
 
     // JSON parse
     JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
-    if (root_value == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return -1;
-    }
-
-    // check the JSON type
-    if (json_value_get_type(root_value) != JSONObject) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
-    }
-
-    // get JSON Object
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        json_value_free(root_value);
+        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
+        return -1;
     }
 
     // check status code
@@ -255,13 +230,6 @@ int sm_user_get_service_info(
     json_value_free(root_value);
     khttp_destroy(ctx);                                                         /* free: root_value, ctx */
     return 0;
-
-json_parse_failure:
-    printf("%s: JSON parse failed\n", __func__);    // Error Level
-    printf("body = %s\n", (const char *)ctx->body);
-    json_value_free(root_value);
-    khttp_destroy(ctx);
-    return -1;
 }
 
 // 20. sm_user_get_service_all
@@ -312,22 +280,13 @@ int sm_user_get_service_all(
 
     // JSON parse
     JSON_Value * root_value = json_parse_string((const char *)ctx->body);       /* alloc: root_value */
-    if (root_value == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        khttp_destroy(ctx);                                                     /* free: ctx */
-        return -1;
-    }
-
-    // check the JSON type
-    if (json_value_get_type(root_value) != JSONObject) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
-    }
-
-    // get JSON Object
     JSON_Object * json_body = json_value_get_object(root_value);
     if (json_body == NULL) {
-        goto json_parse_failure;                                                /* free: root_value, ctx */
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        json_value_free(root_value);
+        khttp_destroy(ctx);                                                     /* free: root_value, ctx */
+        return -1;
     }
 
     // check status code
@@ -382,13 +341,6 @@ int sm_user_get_service_all(
     json_value_free(root_value);
     khttp_destroy(ctx);                                                         /* free: root_value, ctx */
     return 0;
-
-json_parse_failure:
-    printf("%s: JSON parse failed\n", __func__);    // Error Level
-    printf("body = %s\n", (const char *)ctx->body);
-    json_value_free(root_value);
-    khttp_destroy(ctx);
-    return -1;
 }
 
 
