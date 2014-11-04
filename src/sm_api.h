@@ -225,6 +225,13 @@ int sm_device_get_user_list(
         const char * api_key,
         SM_User_Account ** user_list);
 
+/*
+ * 11-2. sm_user_account_free
+ *
+ * @param user_account
+ */
+void sm_user_account_free(SM_User_Account * user_account);
+
 /* 14. sm_device_get_service_all
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.hs7e4bx2bo45
  *

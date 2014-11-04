@@ -661,7 +661,7 @@ int sm_device_get_user_list(
         // check ptr
         if (ptr == NULL) {
             printf("%s: out of memory\n", __func__);
-            // TODO: free root
+            sm_user_account_free(root);
             _return(-1);
         }
 
@@ -682,6 +682,24 @@ _return:
     if (ctx        != NULL) khttp_destroy(ctx);
     return _ret;
 }
+
+// 11-2. sm_user_account_free
+void sm_user_account_free(SM_User_Account * user_account) {
+    if (user_account == NULL) {
+        return;
+    }
+
+    if (user_account->next != NULL) {
+        // recursive
+        sm_user_account_free(user_account->next);
+        user_account->next = NULL;
+    }
+
+    // debug log
+    // printf("free user '%s'\n", user_account->username);
+
+    free((void *)user_account);
+};
 
 // 14. sm_device_get_service_all
 int sm_device_get_service_all(

@@ -158,8 +158,7 @@ int test_device_get_user_list() {
     }
     puts("");
 
-    // TODO: free user_list
-
+    sm_user_account_free(user_list);    // free: user_list
     return 0;
 }
 
