@@ -95,8 +95,38 @@ int test_device_get_service_info() {
     return 0;
 }
 
+int test_device_get_service_all() {
+    SM_Service_Info service_info = {0};
+    puts("\n14. sm_device_get_service_all");
+    if (sm_device_get_service_all(Global.server_url, Global.token, Global.api_key, &service_info) != 0) {
+        return -1;
+    }
+
+    printf(" mqtt.id           = %s\n",   service_info.mqtt.id);
+    printf(" mqtt.pwd          = %s\n",   service_info.mqtt.pwd);
+    printf(" mqtt.server       = %s\n",   service_info.mqtt.server);
+    printf(" mqtt.port         = %d\n",   service_info.mqtt.port);
+    printf(" mqtt.client_id    = %s\n",   service_info.mqtt.client_id);
+    printf(" mqtt.topic        = %s\n",   service_info.mqtt.topic);
+    printf(" mqtt.system_topic = %s\n\n", service_info.mqtt.system_topic);
+
+    printf("relay.id           = %s\n",   service_info.relay.id);
+    printf("relay.pwd          = %s\n",   service_info.relay.pwd);
+    printf("relay.server       = %s\n",   service_info.relay.server);
+    printf("relay.port         = %d\n\n", service_info.relay.port);
+
+    printf("  cvr.id           = %s\n",   service_info.cvr.id);
+    printf("  cvr.pwd          = %s\n",   service_info.cvr.pwd);
+    printf("  cvr.server       = %s\n",   service_info.cvr.server);
+    printf("  cvr.port         = %d\n",   service_info.cvr.port);
+    printf("  cvr.start_time   = %lld\n", service_info.cvr.start_time);
+    printf("  cvr.end_time     = %lld\n", service_info.cvr.end_time);
+    return 0;
+}
+
 int main() {
     test_device_digest_login();
     test_device_get_service_info();
+    test_device_get_service_all();
     return EXIT_SUCCESS;
 }
