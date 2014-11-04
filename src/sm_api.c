@@ -418,7 +418,7 @@ int sm_mec_send_message(
 
     // set post body
     size_t post_body_len = strlen(message) + 512;
-    post_body = (char *)calloc(post_body_len, sizeof(char));
+    post_body = (char *) calloc(post_body_len, sizeof(char));
     if (post_body == NULL) {
         printf("%s: out of memory\n", __func__);
         _return(-1);
@@ -476,6 +476,136 @@ int sm_mec_send_message(
 
 _return:
     if (post_body  != NULL) free((void *)post_body);
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
+// 02. sm_mec_get_message
+int sm_mec_get_message(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        long         serial,
+        SM_MEC_Message ** mec_message_list) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+    *mec_message_list = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(token)      ||
+        sm_check_string(api_key)    ||
+        sm_check_string(api_secret) != 0) {
+        _return(-1);
+    }
+
+    if (serial < 0) {
+        printf("%s: serial (%ld) should not be negative\n", __func__, serial);
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/mec_msg/v1/get", server_url);
+
+    // generate 'current_time' and 'api_token'
+    time_t current_time = 0;
+    char api_token[SM_SHA1_LEN] = {0};
+    sm_generate_api_token(api_secret, api_token, &current_time);
+
+    // set post body
+    char post_body[512] = {0};
+    snprintf(post_body, 512,
+        "token=%s&api_key=%s&api_token=%s&time=%ld&serial=%ld",
+        token,
+        api_key,
+        api_token,
+        current_time,
+        serial
+    );
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        _return(ret);
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ctx->hp.status_code);
+    }
+
+    // JSON parse
+    root_value = json_parse_string((const char *)ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(-1);
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 2222) {
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(statusCode);
+    }
+
+    // get 'ret_msg.messages' and convert into linked list
+    size_t i;
+    JSON_Array * json_messages = json_object_dotget_array(json_body, "ret_msg.messages");
+    SM_MEC_Message * root = NULL;
+    SM_MEC_Message * ptr  = NULL;
+    for (i = 0; i < json_array_get_count(json_messages); i++) {
+        const JSON_Object * obj = json_array_get_object(json_messages, i);
+        const char * src     =  json_object_get_string(obj, "src");
+        const char * content =  json_object_get_string(obj, "content");
+        long serial    = (long) json_object_get_number(obj, "serial");
+        long timestamp = (long) json_object_get_number(obj, "timestamp");
+        long ttl       = (long) json_object_get_number(obj, "ttl");
+
+        // memory alloc the new message entry
+        if (root == NULL) {
+            // the first message entry
+            root = (SM_MEC_Message *) malloc(sizeof(SM_MEC_Message));
+            // TODO: check malloc return value
+            ptr = root;
+        } else {
+            // the others message entry
+            ptr->next = (SM_MEC_Message *) malloc(sizeof(SM_MEC_Message));
+            // TODO: check malloc return value
+            ptr = ptr->next;
+        }
+
+        // set message entry
+        memset(ptr, 0, sizeof(SM_MEC_Message));
+        strncpy(ptr->src, src, SM_USER_UID_LEN);                            // 1. src
+        ptr->content = (char *) calloc(strlen(content) + 1, sizeof(char));  // 2. content
+        strncpy(ptr->content, content, strlen(content));
+        ptr->serial    = serial;                                            // 3. serial
+        ptr->timestamp = timestamp;                                         // 4. timestamp
+        ptr->ttl       = ttl;                                               // 5. ttl
+        ptr->next      = NULL;                                              // 6. next
+    }
+
+    // set mec_message_list
+    *mec_message_list = root;
+    _return(0);
+
+_return:
     if (root_value != NULL) json_value_free(root_value);
     if (ctx        != NULL) khttp_destroy(ctx);
     return _ret;

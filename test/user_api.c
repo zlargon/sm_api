@@ -137,10 +137,55 @@ int test_mec_send_message() {
     return ret == 0 ? 0 : -1;
 }
 
+int test_mec_get_message() {
+    puts("\n02. sm_mec_get_message");
+    SM_MEC_Message * mec_message_list = NULL;
+    int ret = sm_mec_get_message(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        Global.api_secret,
+        0,
+        &mec_message_list                   // alloc: mec_message_list
+    );
+
+    if (ret != 0) {
+        return -1;
+    }
+
+    if (mec_message_list == NULL) {
+        puts("no messages");
+        return 0;
+    }
+
+    int i = 1;
+    SM_MEC_Message * ptr;
+    for (ptr = mec_message_list; ptr != NULL; ptr = ptr->next) {
+        printf("%2d. \n"
+            "      src = %s\n"
+            "  content = %s\n"
+            "   serial = %ld\n"
+            "timestamp = %ld\n"
+            "      ttl = %ld\n\n",
+            i++,
+            ptr->src,
+            ptr->content,
+            ptr->serial,
+            ptr->timestamp,
+            ptr->ttl
+        );
+    }
+
+    // TODO: free mec_message_list
+
+    return 0;
+}
+
 int main() {
     test_user_digest_login();
     test_user_get_service_info();
     test_user_get_service_all();
     test_mec_send_message();
+    test_mec_get_message();
     return EXIT_SUCCESS;
 }

@@ -12,7 +12,7 @@
 #define SM_USER_TOKEN_LEN       256
 #define SM_USER_EXPIRATION_LEN  256
 
-typedef struct {
+typedef struct SM_User_Account {
     char username   [SM_USER_NAME_LEN];
     char uid        [SM_USER_UID_LEN];
     char email      [SM_USER_EMAIL_LEN];
@@ -31,7 +31,7 @@ typedef struct {
 #define SM_SERVICE_MQTT_CLINET_ID_LEN 256
 #define SM_SERVICE_MQTT_TOPIC_LEN     128
 
-typedef struct {
+typedef struct SM_Service_Info {
     // MQTT
     struct {
         char  id           [SM_SERVICE_ID_LEN];
@@ -68,6 +68,17 @@ typedef struct {
         int   live_port;
     } media;
 } SM_Service_Info;
+
+
+/** Struct: SM_MEC_Message **/
+typedef struct SM_MEC_Message {
+    char   src[SM_USER_UID_LEN];
+    char * content; // alloc
+    long   serial;
+    long   timestamp;
+    long   ttl;
+    struct SM_MEC_Message * next;
+} SM_MEC_Message;
 
 
 /** USER API **/
@@ -181,5 +192,27 @@ int sm_mec_send_message(
         long         expire,
         const char * target_id,
         const char * message);
+
+/* 02. sm_mec_get_message
+ * https://docs.google.com/a/gemteks.com/document/d/1rcvGr_lrOClHl2cI5TwV8XByEW4tCaK7O5MlxSnHer4/edit#heading=h.nd38bgr0hq9b
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param api_secret
+ * @param serial
+ * @param mec_message_list
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_mec_get_message(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        long         serial,
+        SM_MEC_Message ** mec_message_list);
 
 #endif
