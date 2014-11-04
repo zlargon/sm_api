@@ -54,7 +54,49 @@ int test_device_digest_login() {
     return 0;
 }
 
+int test_device_get_service_info() {
+    SM_Service_Info service_info = {0};
+
+    // MSG
+    puts("\n08. sm_device_get_service_info: MSG");
+    if (sm_device_get_service_info(Global.server_url, Global.token, Global.api_key, "MSG", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n", service_info.mqtt.id);
+    printf("         pwd = %s\n", service_info.mqtt.pwd);
+    printf("      server = %s\n", service_info.mqtt.server);
+    printf("        port = %d\n", service_info.mqtt.port);
+    printf("   client_id = %s\n", service_info.mqtt.client_id);
+    printf("       topic = %s\n", service_info.mqtt.topic);
+    printf("system_topic = %s\n", service_info.mqtt.system_topic);
+
+    // RELAY
+    puts("\n08. sm_device_get_service_info: RELAY");
+    if (sm_device_get_service_info(Global.server_url, Global.token, Global.api_key, "RELAY", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n", service_info.relay.id);
+    printf("         pwd = %s\n", service_info.relay.pwd);
+    printf("      server = %s\n", service_info.relay.server);
+    printf("        port = %d\n", service_info.relay.port);
+
+    // CVR
+    puts("\n08. sm_device_get_service_info: CVR");
+    if (sm_device_get_service_info(Global.server_url, Global.token, Global.api_key, "CVR", &service_info) != 0) {
+        return -1;
+    }
+    printf("          id = %s\n",   service_info.cvr.id);
+    printf("         pwd = %s\n",   service_info.cvr.pwd);
+    printf("      server = %s\n",   service_info.cvr.server);
+    printf("        port = %d\n",   service_info.cvr.port);
+    printf("  start_time = %lld\n", service_info.cvr.start_time);
+    printf("    end_time = %lld\n", service_info.cvr.end_time);
+
+    return 0;
+}
+
 int main() {
     test_device_digest_login();
+    test_device_get_service_info();
     return EXIT_SUCCESS;
 }

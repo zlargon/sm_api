@@ -70,12 +70,12 @@ typedef struct SM_Service_Info {
 
     // CVR
     struct {
-        char  id           [SM_SERVICE_ID_LEN];
-        char  pwd          [SM_SERVICE_PWD_LEN];
-        char  server       [SM_SERVICE_SERVER_LEN];
-        int   port;
-        long  start_time;
-        long  end_time;
+        char      id       [SM_SERVICE_ID_LEN];
+        char      pwd      [SM_SERVICE_PWD_LEN];
+        char      server   [SM_SERVICE_SERVER_LEN];
+        int       port;
+        long long start_time;
+        long long end_time;
     } cvr;
 
     // Media
@@ -183,6 +183,27 @@ int sm_device_digest_login(
         const char * username,
         const char * password,
         SM_Device_Account * device_account);
+
+/*
+ * 08. sm_device_get_service_info
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.rurnksd06q31
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param service
+ * @param service_info
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_get_service_info(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * service,
+        SM_Service_Info * service_info);
 
 
 /** MEC API **/
