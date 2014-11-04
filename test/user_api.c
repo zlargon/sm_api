@@ -176,7 +176,7 @@ int test_mec_get_message() {
         );
     }
 
-    // TODO: free mec_message_list
+    sm_mec_free_message(mec_message_list);  // free: mec_message_list
 
     return 0;
 }

@@ -581,13 +581,18 @@ int sm_mec_get_message(
         if (root == NULL) {
             // the first message entry
             root = (SM_MEC_Message *) malloc(sizeof(SM_MEC_Message));
-            // TODO: check malloc return value
             ptr = root;
         } else {
             // the others message entry
             ptr->next = (SM_MEC_Message *) malloc(sizeof(SM_MEC_Message));
-            // TODO: check malloc return value
             ptr = ptr->next;
+        }
+
+        // check ptr
+        if (ptr == NULL) {
+            printf("%s: out of memory\n", __func__);
+            sm_mec_free_message(root);
+            _return(-1);
         }
 
         // set message entry
@@ -610,6 +615,26 @@ _return:
     if (ctx        != NULL) khttp_destroy(ctx);
     return _ret;
 }
+
+// 03. sm_mec_free_message
+void sm_mec_free_message(SM_MEC_Message * mec_message) {
+    if (mec_message == NULL) {
+        return;
+    }
+
+    if (mec_message->next != NULL) {
+        // recursive
+        sm_mec_free_message(mec_message->next);
+        mec_message->next = NULL;
+    }
+
+    // debug log
+    // printf("free message '%s'\n", mec_message->content);
+
+    free((void *)mec_message->content);
+    mec_message->content = NULL;
+    free((void *)mec_message);
+};
 
 
 /** Internal Function **/

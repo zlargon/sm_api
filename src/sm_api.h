@@ -215,4 +215,10 @@ int sm_mec_get_message(
         long         serial,
         SM_MEC_Message ** mec_message_list);
 
+/* 03. sm_mec_free_message
+ *
+ * @param mec_message
+ */
+void sm_mec_free_message(SM_MEC_Message * mec_message);
+
 #endif
