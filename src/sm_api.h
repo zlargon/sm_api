@@ -23,6 +23,23 @@ typedef struct SM_User_Account {
     char expiration [SM_USER_EXPIRATION_LEN];
 } SM_User_Account;
 
+/** Struct: SM_Device_Account **/
+#define SM_DEVICE_MAC_LEN           256
+#define SM_DEVICE_GID_LEN           256
+#define SM_DEVICE_PIN_LEN           256
+#define SM_DEVICE_TOKEN_LEN         256
+#define SM_DEVICE_EXPIRATION_LEN    256
+#define SM_DEVICE_SERVICE_COUNT     10
+#define SM_DEVICE_SERVICE_NAME_LEN  32
+
+typedef struct SM_Device_Account {
+    char mac        [SM_DEVICE_MAC_LEN];
+    char gid        [SM_DEVICE_GID_LEN];
+    char pin        [SM_DEVICE_PIN_LEN];
+    char token      [SM_DEVICE_TOKEN_LEN];
+    char expiration [SM_DEVICE_EXPIRATION_LEN];
+    char service_list[SM_DEVICE_SERVICE_COUNT][SM_DEVICE_SERVICE_NAME_LEN];
+} SM_Device_Account;
 
 /** Struct: SM_Service_Info **/
 #define SM_SERVICE_ID_LEN             64
@@ -144,6 +161,28 @@ int sm_user_get_service_all(
         const char * token,
         const char * api_key,
         SM_Service_Info * service_info);
+
+
+/** DEVICE API **/
+
+/*
+ * 03. sm_device_digest_login
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.e0v5rapmh0lf
+ *
+ * @param server_url
+ * @param username
+ * @param password
+ * @param device_account
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_digest_login(
+        const char * server_url,
+        const char * username,
+        const char * password,
+        SM_Device_Account * device_account);
 
 
 /** MEC API **/

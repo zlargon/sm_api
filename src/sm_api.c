@@ -353,6 +353,98 @@ _return:
 }
 
 
+/** DEVICE API **/
+
+// 03. sm_device_digest_login
+int sm_device_digest_login(
+        const char * server_url,
+        const char * username,
+        const char * password,
+        SM_Device_Account * device_account) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url)       ||
+        sm_check_string(username)         ||
+        sm_check_string(password)         ||
+        sm_check_not_null(device_account) != 0) {
+        _return(-1);
+    }
+    memset(device_account, 0, sizeof(SM_Device_Account));
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/device/login", server_url);
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
+    khttp_ssl_skip_auth(ctx);
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        _return(ret);
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ctx->hp.status_code);
+    }
+
+    // JSON parse
+    root_value = json_parse_string((const char *)ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(-1);
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 1221) {
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(statusCode);
+    }
+
+    const char * mac        = json_object_dotget_string(json_body, "info.account.mac");
+    const char * gid        = json_object_dotget_string(json_body, "info.account.gid");
+    const char * pin        = json_object_dotget_string(json_body, "info.account.pin");
+    const char * token      = json_object_dotget_string(json_body, "global_session.token");
+    const char * expiration = json_object_dotget_string(json_body, "global_session.expiration");
+
+    // copy the value to 'device_account'
+    if (mac        != NULL) strncpy(device_account->mac,        mac,        SM_DEVICE_MAC_LEN);
+    if (gid        != NULL) strncpy(device_account->gid,        gid,        SM_DEVICE_GID_LEN);
+    if (pin        != NULL) strncpy(device_account->pin,        pin,        SM_DEVICE_PIN_LEN);
+    if (token      != NULL) strncpy(device_account->token,      token,      SM_DEVICE_TOKEN_LEN);
+    if (expiration != NULL) strncpy(device_account->expiration, expiration, SM_DEVICE_EXPIRATION_LEN);
+
+    size_t i;
+    const JSON_Array * service_list = json_object_dotget_array(json_body, "info.service_list");
+    for (i = 0; i < json_array_get_count(service_list); i++) {
+        const JSON_Object * obj = json_array_get_object(service_list, i);
+        const char * type = json_object_get_string(obj, "type");
+        if (type != NULL) {
+            strncpy(device_account->service_list[i], type, SM_DEVICE_SERVICE_NAME_LEN);
+        }
+    }
+
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
+
 /** MEC API **/
 
 // 01. sm_mec_send_message
