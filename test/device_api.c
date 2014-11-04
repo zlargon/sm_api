@@ -124,9 +124,49 @@ int test_device_get_service_all() {
     return 0;
 }
 
+int test_device_get_user_list() {
+    puts("\n11. sm_device_get_user_list");
+    SM_User_Account * user_list = NULL;
+    int ret = sm_device_get_user_list(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        &user_list                      // alloc: user_list
+    );
+
+    if (ret != 0) {
+        return -1;
+    }
+
+    if (user_list == NULL) {
+        puts("no user");
+        return 0;
+    }
+
+    int i = 1;
+    SM_User_Account * ptr;
+    for (ptr = user_list; ptr != NULL; ptr = ptr->next) {
+        printf("%2d.\n"
+            "username = %s\n"
+            "   email = %s\n"
+            "     uid = %s\n\n",
+            i++,
+            ptr->username,
+            ptr->email,
+            ptr->uid
+        );
+    }
+    puts("");
+
+    // TODO: free user_list
+
+    return 0;
+}
+
 int main() {
     test_device_digest_login();
     test_device_get_service_info();
     test_device_get_service_all();
+    test_device_get_user_list();
     return EXIT_SUCCESS;
 }

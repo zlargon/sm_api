@@ -573,6 +573,116 @@ _return:
     return _ret;
 }
 
+// 11. sm_device_get_user_list
+int sm_device_get_user_list(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        SM_User_Account ** user_list) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+    *user_list = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(token)      ||
+        sm_check_string(api_key)    != 0) {
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/device/get_user_list", server_url);
+
+    // set post body
+    char post_body[512] = {0};
+    snprintf(post_body, 512, "token=%s&api_key=%s", token, api_key);
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        _return(ret);
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ctx->hp.status_code);
+    }
+
+    // JSON parse
+    root_value = json_parse_string((const char *)ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(-1);
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 1240) {
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(statusCode);
+    }
+
+    // get 'user_list' and convert into linked list
+    size_t i;
+    const JSON_Array * json_users = json_object_dotget_array(json_body, "user_list");
+    SM_User_Account * root = NULL;
+    SM_User_Account * ptr  = NULL;
+    for (i = 0; i < json_array_get_count(json_users); i++) {
+        const JSON_Object * obj = json_array_get_object(json_users, i);
+        const char * username   = json_object_get_string(obj, "username");
+        const char * email      = json_object_get_string(obj, "email");
+        const char * uid        = json_object_get_string(obj, "uid");
+
+        // memory alloc the new user entry
+        if (root == NULL) {
+            // the first user entry
+            root = (SM_User_Account *) malloc(sizeof(SM_User_Account));
+            ptr = root;
+        } else {
+            // the others user entry
+            ptr->next = (SM_User_Account *) malloc(sizeof(SM_User_Account));
+            ptr = ptr->next;
+        }
+
+        // check ptr
+        if (ptr == NULL) {
+            printf("%s: out of memory\n", __func__);
+            // TODO: free root
+            _return(-1);
+        }
+
+        // set user entry
+        memset(ptr, 0, sizeof(SM_User_Account));
+        if (username != NULL) strncpy(ptr->username, username, SM_USER_NAME_LEN);
+        if (email    != NULL) strncpy(ptr->email,    email,    SM_USER_EMAIL_LEN);
+        if (uid      != NULL) strncpy(ptr->uid,      uid,      SM_USER_UID_LEN);
+        ptr->next = NULL;
+    }
+
+    // set user_list
+    *user_list = root;
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
 // 14. sm_device_get_service_all
 int sm_device_get_service_all(
         const char * server_url,
@@ -902,7 +1012,7 @@ int sm_mec_get_message(
 
     // get 'ret_msg.messages' and convert into linked list
     size_t i;
-    JSON_Array * json_messages = json_object_dotget_array(json_body, "ret_msg.messages");
+    const JSON_Array * json_messages = json_object_dotget_array(json_body, "ret_msg.messages");
     SM_MEC_Message * root = NULL;
     SM_MEC_Message * ptr  = NULL;
     for (i = 0; i < json_array_get_count(json_messages); i++) {

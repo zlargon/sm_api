@@ -21,6 +21,7 @@ typedef struct SM_User_Account {
     char mobile     [SM_USER_MOBILE_LEN];
     char token      [SM_USER_TOKEN_LEN];
     char expiration [SM_USER_EXPIRATION_LEN];
+    struct SM_User_Account * next;
 } SM_User_Account;
 
 /** Struct: SM_Device_Account **/
@@ -190,7 +191,7 @@ int sm_device_digest_login(
  *
  * @param server_url
  * @param token
- * @param api_token
+ * @param api_key
  * @param service
  * @param service_info
  * @return = 0    success
@@ -204,6 +205,25 @@ int sm_device_get_service_info(
         const char * api_key,
         const char * service,
         SM_Service_Info * service_info);
+
+/*
+ * 11. sm_device_get_user_list
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.kyk5jimd8wzm
+ *
+ * @param server_url
+ * @param token
+ * @param api_key
+ *
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_get_user_list(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        SM_User_Account ** user_list);
 
 /* 14. sm_device_get_service_all
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.hs7e4bx2bo45
