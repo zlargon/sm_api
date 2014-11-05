@@ -198,12 +198,15 @@ int test_device_get_user_list() {
 
 int test_device_add_user() {
     puts("\n12. sm_device_add_user");
+
+    const char * device_info = "{\"name\":\"my room\",\"number\":\"123\",\"test\":\"This is test\"}";
     int ret = sm_device_add_user(
         Global.server_url,
         Global.token,
         Global.api_key,
         Global.api_secret,
-        "700000131"
+        "700000131",
+        device_info
     );
 
     printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);

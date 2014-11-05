@@ -291,6 +291,7 @@ void sm_user_account_free(SM_User_Account * user_account);
  * @param api_token
  * @param api_secret
  * @param user_id
+ * @param device_info (optional)   The device information defined by user, such as device name. Format: JSON object
  * @return = 0    success
  *         < 0    parameters failure, HTTP failure or JSON parse failure
  *         XXX    HTTP error status code
@@ -301,7 +302,8 @@ int sm_device_add_user(
         const char * token,
         const char * api_key,
         const char * api_secret,
-        const char * user_id);
+        const char * user_id,
+        const char * device_info);
 
 /* 13. sm_device_remove_user
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.d8mamyk2g9m2

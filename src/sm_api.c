@@ -753,13 +753,13 @@ void sm_user_account_free(SM_User_Account * user_account) {
 };
 
 // 12. sm_device_add_user
-// TODO: add parameter 'json_device_info'
 int sm_device_add_user(
         const char * server_url,
         const char * token,
         const char * api_key,
         const char * api_secret,
-        const char * user_id) {
+        const char * user_id,
+        const char * device_info) {
 
     int _ret;
     khttp_ctx * ctx = NULL;
@@ -783,15 +783,20 @@ int sm_device_add_user(
     char api_token[SM_SHA1_LEN] = {0};
     sm_generate_api_token(api_secret, api_token, &current_time);
 
+    // check device info
+    int has_device_info = device_info != NULL && strlen(device_info) > 0;
+
     // set post body
     char post_body[256] = {0};
     snprintf(post_body, 256,
-        "token=%s&api_key=%s&api_token=%s&time=%ld&user_id=%s",
+        "token=%s&api_key=%s&api_token=%s&time=%ld&user_id=%s%s%s",
         token,
         api_key,
         api_token,
         current_time,
-        user_id
+        user_id,
+        has_device_info ? "&device_info=" : "",
+        has_device_info ? device_info : ""
     );
 
     ctx = khttp_new();
