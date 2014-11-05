@@ -200,6 +200,79 @@ _return:
     return _ret;
 }
 
+// 18. sm_user_add_device
+int sm_user_add_device(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        const char * device_mac,
+        const char * device_pin,
+        const char * device_info) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(token)      ||
+        sm_check_string(api_key)    ||
+        sm_check_string(api_secret) ||
+        sm_check_string(device_mac) ||
+        sm_check_string(device_pin) != 0) {
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/user/add_device", server_url);
+
+    // generate 'current_time' and 'api_token'
+    time_t current_time = 0;
+    char api_token[SM_SHA1_LEN] = {0};
+    sm_generate_api_token(api_secret, api_token, &current_time);
+
+    // check device info
+    int has_device_info = device_info != NULL && strlen(device_info) > 0;
+
+    // set post body
+    char post_body[512] = {0};
+    snprintf(post_body, 512,
+        "token=%s&api_key=%s&api_token=%s&time=%ld&device_id=%s&pin=%s%s%s",
+        token,
+        api_key,
+        api_token,
+        current_time,
+        device_mac,
+        device_pin,
+        has_device_info ? "&device_info=" : "",
+        has_device_info ? device_info : ""
+    );
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1231) {
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ret);
+    }
+
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
 // 20. sm_user_get_service_all
 int sm_user_get_service_all(
         const char * server_url,

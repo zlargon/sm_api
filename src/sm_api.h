@@ -145,6 +145,30 @@ int sm_user_get_service_info(
         const char * service,
         SM_Service_Info * service_info);
 
+/* 18. sm_user_add_device
+ * https://docs.google.com/a/gemteks.com/document/d/1O0_ItXjhFbenkJ17cLVSuKn3XTPHUun-q7B4dGVB9iE/edit#heading=h.1jk2v4srna50
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param api_secret
+ * @param device_mac
+ * @param device_pin
+ * @param device_info (optional)   The device information defined by user, such as device name. Format: JSON object
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+ int sm_user_add_device(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret,
+        const char * device_mac,
+        const char * device_pin,
+        const char * device_info);
+
 /* 20. sm_user_get_service_all
  * https://docs.google.com/a/gemteks.com/document/d/1O0_ItXjhFbenkJ17cLVSuKn3XTPHUun-q7B4dGVB9iE/edit#heading=h.4js1iuaksnd2
  *

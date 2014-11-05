@@ -181,10 +181,27 @@ int test_mec_get_message() {
     return 0;
 }
 
+int test_user_add_device() {
+    puts("\n18. sm_user_add_device");
+    int ret = sm_user_add_device(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        Global.api_secret,
+        "f835dd000001",
+        "12345678",
+        "{\"name\":\"my room\",\"number\":\"123\",\"test\":\"This is test\"}"
+    );
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
+}
+
 int main() {
     test_user_digest_login();
     test_user_get_service_info();
     test_user_get_service_all();
+    test_user_add_device();
     test_mec_send_message();
     test_mec_get_message();
     return EXIT_SUCCESS;
