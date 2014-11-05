@@ -156,10 +156,23 @@ int test_device_get_user_list() {
             ptr->uid
         );
     }
-    puts("");
 
     sm_user_account_free(user_list);    // free: user_list
     return 0;
+}
+
+int test_device_add_user() {
+    puts("\n12. sm_device_add_user");
+    int ret = sm_device_add_user(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        Global.api_secret,
+        "700000131"
+    );
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
 }
 
 int main() {
@@ -167,5 +180,6 @@ int main() {
     test_device_get_service_info();
     test_device_get_service_all();
     test_device_get_user_list();
+    test_device_add_user();
     return EXIT_SUCCESS;
 }
