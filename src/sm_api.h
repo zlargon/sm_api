@@ -167,6 +167,19 @@ int sm_user_get_service_all(
 /** DEVICE API **/
 
 /*
+ * 02. sm_device_activation
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.l1kud18uwme2
+ *
+ * @param server_url
+ * @param device_mac
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_activation(const char * server_url, const char * device_mac);
+
+/*
  * 03. sm_device_digest_login
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.e0v5rapmh0lf
  *

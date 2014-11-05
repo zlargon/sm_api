@@ -294,6 +294,50 @@ _return:
 
 /** DEVICE API **/
 
+// 02. sm_device_activation
+int sm_device_activation(const char * server_url, const char * device_mac) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(device_mac) != 0) {
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/device/activation", server_url);
+
+    // set post body
+    char post_body[128] = {0};
+    snprintf(post_body, 128, "device_id=%s", device_mac);
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1226) {
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ret);
+    }
+
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
 // 03. sm_device_digest_login
 int sm_device_digest_login(
         const char * server_url,

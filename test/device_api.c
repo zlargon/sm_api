@@ -202,6 +202,14 @@ int test_device_reset_default() {
     return ret == 0 ? 0 : -1;
 }
 
+int test_device_activation() {
+    puts("\n02. sm_device_activation");
+    int ret = sm_device_activation(Global.server_url, Global.username);
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
+}
+
 int main() {
     test_device_digest_login();
     test_device_get_service_info();
@@ -210,5 +218,6 @@ int main() {
     test_device_add_user();
     test_device_remove_user();
     test_device_reset_default();
+    test_device_activation();
     return EXIT_SUCCESS;
 }
