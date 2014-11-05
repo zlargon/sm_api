@@ -407,6 +407,75 @@ _return:
     return _ret;
 }
 
+// 04. sm_device_certificate_login
+int sm_device_certificate_login(
+        const char * server_url,
+        const char * cert_path,
+        const char * key_path,
+        SM_Device_Account * device_account) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url)       ||
+        sm_check_string(cert_path)        ||
+        sm_check_string(key_path)         ||
+        sm_check_not_null(device_account) != 0) {
+        _return(-1);
+    }
+    memset(device_account, 0, sizeof(SM_Device_Account));
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/device/login", server_url);
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_ssl_set_cert_key(ctx, (char *)cert_path, (char *)key_path, NULL);
+    khttp_ssl_skip_auth(ctx);
+
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1221) {
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ret);
+    }
+
+    const char * mac        = json_object_dotget_string(json_body, "info.account.mac");
+    const char * gid        = json_object_dotget_string(json_body, "info.account.gid");
+    const char * pin        = json_object_dotget_string(json_body, "info.account.pin");
+    const char * token      = json_object_dotget_string(json_body, "global_session.token");
+    const char * expiration = json_object_dotget_string(json_body, "global_session.expiration");
+
+    // copy the value to 'device_account'
+    if (mac        != NULL) strncpy(device_account->mac,        mac,        SM_DEVICE_MAC_LEN);
+    if (gid        != NULL) strncpy(device_account->gid,        gid,        SM_DEVICE_GID_LEN);
+    if (pin        != NULL) strncpy(device_account->pin,        pin,        SM_DEVICE_PIN_LEN);
+    if (token      != NULL) strncpy(device_account->token,      token,      SM_DEVICE_TOKEN_LEN);
+    if (expiration != NULL) strncpy(device_account->expiration, expiration, SM_DEVICE_EXPIRATION_LEN);
+
+    size_t i;
+    const JSON_Array * service_list = json_object_dotget_array(json_body, "info.service_list");
+    for (i = 0; i < json_array_get_count(service_list); i++) {
+        const JSON_Object * obj = json_array_get_object(service_list, i);
+        const char * type = json_object_get_string(obj, "type");
+        if (type != NULL) {
+            strncpy(device_account->service_list[i], type, SM_DEVICE_SERVICE_NAME_LEN);
+        }
+    }
+
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
 // 08. sm_device_get_service_info
 int sm_device_get_service_info(
         const char * server_url,

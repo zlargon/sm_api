@@ -199,6 +199,25 @@ int sm_device_digest_login(
         SM_Device_Account * device_account);
 
 /*
+ * 04. sm_device_certificate_login
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.1agagkteinlz
+ *
+ * @param server_url
+ * @param cert_path
+ * @param key_path
+ * @param device_account
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_certificate_login(
+        const char * server_url,
+        const char * cert_path,
+        const char * key_path,
+        SM_Device_Account * device_account);
+
+/*
  * 08. sm_device_get_service_info
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.rurnksd06q31
  *

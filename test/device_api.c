@@ -10,6 +10,8 @@ static struct {
     const char * api_secret;
     const char * username;
     const char * password;
+    const char * cert_path;
+    const char * key_path;
 
     char gid   [SM_DEVICE_GID_LEN];
     char token [SM_DEVICE_TOKEN_LEN];
@@ -19,7 +21,9 @@ static struct {
     .api_key    = "HA-45058956",
     .api_secret = "0744424235",
     .username   = "cbadef000033",
-    .password   = "afnuy6yv"
+    .password   = "afnuy6yv",
+    .cert_path  = "device/cert.pem",
+    .key_path   = "device/key.pem"
 };
 
 int test_device_digest_login() {
@@ -27,6 +31,37 @@ int test_device_digest_login() {
 
     SM_Device_Account device_account = {0};
     if (sm_device_digest_login(Global.server_url, Global.username, Global.password, &device_account) != 0) {
+        return -1;
+    }
+
+    printf("         mac = %s\n", device_account.mac);
+    printf("         gid = %s\n", device_account.gid);
+    printf("         pin = %s\n", device_account.pin);
+    printf("       token = %s\n", device_account.token);
+    printf("  expiration = %s\n", device_account.expiration);
+    printf("service_list = ");
+    int i;
+    for (i = 0; i < SM_DEVICE_SERVICE_COUNT; i++) {
+        if (strlen(device_account.service_list[i]) != 0) {
+            if (i > 0) printf(", ");
+            printf("%s", device_account.service_list[i]);
+        }
+    }
+    puts("");
+
+    // set gid, token to global varibale
+    memset(Global.gid,   0, SM_DEVICE_GID_LEN);
+    memset(Global.token, 0, SM_DEVICE_TOKEN_LEN);
+
+    strcpy(Global.gid,   device_account.gid);
+    strcpy(Global.token, device_account.token);
+    return 0;
+}
+
+int test_device_certificate_login() {
+    puts("\n04. sm_device_certificate_login");
+    SM_Device_Account device_account = {0};
+    if (sm_device_certificate_login(Global.server_url, Global.cert_path, Global.key_path, &device_account) != 0) {
         return -1;
     }
 
@@ -211,6 +246,7 @@ int test_device_activation() {
 }
 
 int main() {
+    test_device_certificate_login();
     test_device_digest_login();
     test_device_get_service_info();
     test_device_get_service_all();

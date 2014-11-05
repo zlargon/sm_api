@@ -1,0 +1,6 @@
+ Device MAC : aabbccc001144
+   Cloud ID : 600018009
+        PWD : 2blgxz23
+        PIN : 34015858
+    Service : HA
+ProjectName : BUZZI
