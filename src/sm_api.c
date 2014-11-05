@@ -573,6 +573,88 @@ _return:
     return _ret;
 }
 
+// 09. sm_device_reset_default
+int sm_device_reset_default(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url) ||
+        sm_check_string(token)      ||
+        sm_check_string(api_key)    ||
+        sm_check_string(api_secret) != 0) {
+        _return(-1);
+    }
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v1/device/reset_default", server_url);
+
+    // generate 'current_time' and 'api_token'
+    time_t current_time = 0;
+    char api_token[SM_SHA1_LEN] = {0};
+    sm_generate_api_token(api_secret, api_token, &current_time);
+
+    // set post body
+    char post_body[256] = {0};
+    snprintf(post_body, 256,
+        "token=%s&api_key=%s&api_token=%s&time=%ld",
+        token,
+        api_key,
+        api_token,
+        current_time
+    );
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        _return(ret);
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ctx->hp.status_code);
+    }
+
+    // JSON parse
+    root_value = json_parse_string((const char *)ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", __func__);    // Error Level
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(-1);
+    }
+
+    // check status code
+    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
+    if (statusCode != 1227) {
+        printf("body = %s\n", (const char *)ctx->body);
+        _return(statusCode);
+    }
+
+    _return(0);
+
+_return:
+    if (root_value != NULL) json_value_free(root_value);
+    if (ctx        != NULL) khttp_destroy(ctx);
+    return _ret;
+}
+
 // 11. sm_device_get_user_list
 int sm_device_get_user_list(
         const char * server_url,

@@ -207,6 +207,25 @@ int sm_device_get_service_info(
         SM_Service_Info * service_info);
 
 /*
+ * 09. sm_device_reset_default
+ * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.7mqjk19e9gz9
+ *
+ * @param server_url
+ * @param token
+ * @param api_token
+ * @param api_secret
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_device_reset_default(
+        const char * server_url,
+        const char * token,
+        const char * api_key,
+        const char * api_secret);
+
+/*
  * 11. sm_device_get_user_list
  * https://docs.google.com/a/gemteks.com/document/d/1Ve6e-1oF0yb-MAV8Kh6kBTny0wTrK8BHDCqNcV7gZE4/edit#heading=h.kyk5jimd8wzm
  *

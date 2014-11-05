@@ -189,6 +189,19 @@ int test_device_remove_user() {
     return ret == 0 ? 0 : -1;
 }
 
+int test_device_reset_default() {
+    puts("\n09. sm_device_reset_default");
+    int ret = sm_device_reset_default(
+        Global.server_url,
+        Global.token,
+        Global.api_key,
+        Global.api_secret
+    );
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
+}
+
 int main() {
     test_device_digest_login();
     test_device_get_service_info();
@@ -196,5 +209,6 @@ int main() {
     test_device_get_user_list();
     test_device_add_user();
     test_device_remove_user();
+    test_device_reset_default();
     return EXIT_SUCCESS;
 }
