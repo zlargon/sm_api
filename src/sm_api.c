@@ -18,6 +18,7 @@
 
 int __sm_check_string(const char * var, const char * var_name, const char * func);
 int __sm_check_not_null(const void * var, const char * var_name, const char * func);
+int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func);
 int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
 int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time);
 
@@ -57,34 +58,14 @@ int sm_user_digest_login(
     khttp_set_uri(ctx, url);
     khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
 
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1211) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1211) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     const char * uid        = json_object_dotget_string(json_body, "info.account.uid");
@@ -149,34 +130,13 @@ int sm_user_get_service_info(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1211) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1211) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get MSG, RELAY, CVR field
@@ -274,34 +234,13 @@ int sm_user_get_service_all(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1200) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1200) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get MSG, RELAY, CVR value
@@ -383,34 +322,14 @@ int sm_device_digest_login(
     khttp_set_uri(ctx, url);
     khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
 
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1221) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1221) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     const char * mac        = json_object_dotget_string(json_body, "info.account.mac");
@@ -480,34 +399,13 @@ int sm_device_get_service_info(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1221) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1221) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get MSG, RELAY, CVR field
@@ -617,34 +515,13 @@ int sm_device_reset_default(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1227) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1227) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     _return(0);
@@ -688,34 +565,13 @@ int sm_device_get_user_list(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1240) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1240) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get 'user_list' and convert into linked list
@@ -831,34 +687,13 @@ int sm_device_add_user(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1231) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1231) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     _return(0);
@@ -916,34 +751,13 @@ int sm_device_remove_user(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1234) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1234) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     _return(0);
@@ -988,34 +802,13 @@ int sm_device_get_service_all(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1200) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 1200) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get MSG, RELAY, CVR value
@@ -1159,34 +952,13 @@ int sm_mec_send_message(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 2221) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 2221) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     _return(0);
@@ -1251,34 +1023,13 @@ int sm_mec_get_message(
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
-    int ret = khttp_perform(ctx);
-    if (ret != 0) {
-        _return(ret);
-    }
-
-    // check HTTP status code
-    if (ctx->hp.status_code != 200) {
-        printf("%s: HTTP status code = %d\n", __func__, ctx->hp.status_code);   // Error Level
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 2222) {
         if (ctx->body != NULL) {
             printf("body = %s\n", (const char *)ctx->body);
         }
-        _return(ctx->hp.status_code);
-    }
-
-    // JSON parse
-    root_value = json_parse_string((const char *)ctx->body);
-    JSON_Object * json_body = json_value_get_object(root_value);
-    if (json_body == NULL) {
-        printf("%s: JSON parse failed\n", __func__);    // Error Level
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(-1);
-    }
-
-    // check status code
-    int statusCode = (int) json_object_dotget_number(json_body, "status.code");
-    if (statusCode != 2222) {
-        printf("body = %s\n", (const char *)ctx->body);
-        _return(statusCode);
+        _return(ret);
     }
 
     // get 'ret_msg.messages' and convert into linked list
@@ -1406,4 +1157,40 @@ int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN
     snprintf(string, 128, "%s%ld", api_secret, *current_time);
 
     return sm_crypto_SHA1((const char*)string, api_token);
+}
+
+int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func) {
+    *json_value  = NULL;
+    *json_object = NULL;
+
+    if (sm_check_not_null(ctx) != 0) {
+        return -1;
+    }
+
+    int ret = khttp_perform(ctx);
+    if (ret != 0) {
+        return ret;
+    }
+
+    // check HTTP status code
+    if (ctx->hp.status_code != 200) {
+        printf("%s: HTTP status code = %d\n", func, ctx->hp.status_code);   // Error Level
+        return ctx->hp.status_code;
+    }
+
+    // JSON parse
+    JSON_Value * root_value = json_parse_string(ctx->body);
+    JSON_Object * json_body = json_value_get_object(root_value);
+    if (json_body == NULL) {
+        printf("%s: JSON parse failed\n", func);    // Error Level
+        json_value_free(root_value);
+        return -1;
+    }
+
+    // set json_value and json_object
+    *json_value  = root_value;
+    *json_object = json_body;
+
+    // return status code
+    return (int) json_object_dotget_number(json_body, "status.code");
 }
