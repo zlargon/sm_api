@@ -15,7 +15,6 @@
 #define STRINGIFY(s) #s
 #define sm_check_string(var) __sm_check_string(var, STRINGIFY(var), __func__)
 #define sm_check_not_null(var) __sm_check_not_null(var, STRINGIFY(var), __func__)
-#define _return(ret) _ret = ret; goto _return;
 
 int __sm_check_string(const char * var, const char * var_name, const char * func);
 int __sm_check_not_null(const void * var, const char * var_name, const char * func);
@@ -36,10 +35,6 @@ int sm_user_digest_login(
         const char * app_identifier,
         SM_User_Account * user_account) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(username)       ||
@@ -47,27 +42,25 @@ int sm_user_digest_login(
         sm_check_string(device_id)      ||
         sm_check_string(app_identifier) ||
         sm_check_not_null(user_account) != 0) {
-        _return(-1);
+        return -1;
     }
-
     memset(user_account, 0, sizeof(SM_User_Account));
 
     // set URL
     char url[SM_URL_LEN] = {0};
     snprintf(url, sizeof(url), "%s/v1/user/login?device_id=%s&app_identifier=%s", server_url, device_id, app_identifier);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1211) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1211) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     const char * uid        = json_object_dotget_string(json_body, "info.account.uid");
@@ -88,12 +81,12 @@ int sm_user_digest_login(
     if (token      != NULL) strncpy(user_account->token,      token,      SM_USER_TOKEN_LEN);
     if (expiration != NULL) strncpy(user_account->expiration, expiration, SM_USER_EXPIRATION_LEN);
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 12. sm_user_get_service_info
@@ -104,17 +97,13 @@ int sm_user_get_service_info(
         const char * service,
         SM_Service_Info * service_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_string(service)        ||
         sm_check_not_null(service_info) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -126,19 +115,18 @@ int sm_user_get_service_info(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s&service=%s", token, api_key, service);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1211) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1211) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get MSG, RELAY, CVR field
@@ -194,12 +182,12 @@ int sm_user_get_service_info(
         printf("body = %s\n", (const char *)ctx->body);
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 18. sm_user_add_device
@@ -212,10 +200,6 @@ int sm_user_add_device(
         const char * device_pin,
         const char * device_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
@@ -223,7 +207,7 @@ int sm_user_add_device(
         sm_check_string(api_secret) ||
         sm_check_string(device_mac) ||
         sm_check_string(device_pin) != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -252,27 +236,26 @@ int sm_user_add_device(
         has_device_info ? device_info : ""
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1231) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1231) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 20. sm_user_get_service_all
@@ -282,16 +265,12 @@ int sm_user_get_service_all(
         const char * api_key,
         SM_Service_Info * service_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_not_null(service_info) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -303,19 +282,18 @@ int sm_user_get_service_all(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s", token, api_key);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1200) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1200) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get MSG, RELAY, CVR value
@@ -358,12 +336,12 @@ int sm_user_get_service_all(
     if (media_server_port      != NULL) service_info->media.port      = atoi(media_server_port);
     if (media_server_live_port != NULL) service_info->media.live_port = atoi(media_server_live_port);
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 
@@ -372,14 +350,10 @@ _return:
 // 02. sm_device_activation
 int sm_device_activation(const char * server_url, const char * device_mac) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(device_mac) != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -390,27 +364,26 @@ int sm_device_activation(const char * server_url, const char * device_mac) {
     char post_body[128] = {0};
     snprintf(post_body, 128, "device_id=%s", device_mac);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1226) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1226) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 03. sm_device_digest_login
@@ -420,16 +393,12 @@ int sm_device_digest_login(
         const char * password,
         SM_Device_Account * device_account) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)       ||
         sm_check_string(username)         ||
         sm_check_string(password)         ||
         sm_check_not_null(device_account) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(device_account, 0, sizeof(SM_Device_Account));
 
@@ -437,18 +406,17 @@ int sm_device_digest_login(
     char url[SM_URL_LEN] = {0};
     snprintf(url, sizeof(url), "%s/v1/device/login", server_url);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_username_password(ctx, (char *)username, (char *)password, KHTTP_AUTH_DIGEST);
     khttp_ssl_skip_auth(ctx);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1221) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1221) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     const char * mac        = json_object_dotget_string(json_body, "info.account.mac");
@@ -474,12 +442,12 @@ int sm_device_digest_login(
         }
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 04. sm_device_certificate_login
@@ -489,16 +457,12 @@ int sm_device_certificate_login(
         const char * key_path,
         SM_Device_Account * device_account) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)       ||
         sm_check_string(cert_path)        ||
         sm_check_string(key_path)         ||
         sm_check_not_null(device_account) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(device_account, 0, sizeof(SM_Device_Account));
 
@@ -506,18 +470,17 @@ int sm_device_certificate_login(
     char url[SM_URL_LEN] = {0};
     snprintf(url, sizeof(url), "%s/v1/device/login", server_url);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_ssl_set_cert_key(ctx, (char *)cert_path, (char *)key_path, NULL);
     khttp_ssl_skip_auth(ctx);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1221) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1221) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     const char * mac        = json_object_dotget_string(json_body, "info.account.mac");
@@ -543,12 +506,12 @@ int sm_device_certificate_login(
         }
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 08. sm_device_get_service_info
@@ -559,17 +522,13 @@ int sm_device_get_service_info(
         const char * service,
         SM_Service_Info * service_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_string(service)        ||
         sm_check_not_null(service_info) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -581,19 +540,18 @@ int sm_device_get_service_info(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s&service=%s", token, api_key, service);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1221) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1221) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get MSG, RELAY, CVR field
@@ -651,12 +609,12 @@ int sm_device_get_service_info(
         printf("body = %s\n", (const char *)ctx->body);
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 09. sm_device_reset_default
@@ -666,16 +624,12 @@ int sm_device_reset_default(
         const char * api_key,
         const char * api_secret) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
         sm_check_string(api_key)    ||
         sm_check_string(api_secret) != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -697,27 +651,26 @@ int sm_device_reset_default(
         current_time
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1227) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1227) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 11. sm_device_get_user_list
@@ -727,16 +680,13 @@ int sm_device_get_user_list(
         const char * api_key,
         SM_User_Account ** user_list) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
     *user_list = NULL;
 
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
         sm_check_string(api_key)    != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -747,19 +697,18 @@ int sm_device_get_user_list(
     char post_body[512] = {0};
     snprintf(post_body, 512, "token=%s&api_key=%s", token, api_key);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1240) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1240) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get 'user_list' and convert into linked list
@@ -788,7 +737,8 @@ int sm_device_get_user_list(
         if (ptr == NULL) {
             printf("%s: out of memory\n", __func__);
             sm_user_account_free(root);
-            _return(-1);
+            result = -1;
+            goto end;
         }
 
         // set user entry
@@ -801,12 +751,13 @@ int sm_device_get_user_list(
 
     // set user_list
     *user_list = root;
-    _return(0);
 
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 11-2. sm_user_account_free
@@ -836,17 +787,13 @@ int sm_device_add_user(
         const char * user_id,
         const char * device_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
         sm_check_string(api_key)    ||
         sm_check_string(api_secret) ||
         sm_check_string(user_id)    != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -874,27 +821,26 @@ int sm_device_add_user(
         has_device_info ? device_info : ""
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1231) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1231) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 13. sm_device_remove_user
@@ -905,17 +851,13 @@ int sm_device_remove_user(
         const char * api_secret,
         const char * user_id) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
         sm_check_string(api_key)    ||
         sm_check_string(api_secret) ||
         sm_check_string(user_id)    != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -938,27 +880,26 @@ int sm_device_remove_user(
         user_id
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1234) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1234) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 14. sm_device_get_service_all
@@ -968,16 +909,12 @@ int sm_device_get_service_all(
         const char * api_key,
         SM_Service_Info * service_info) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url)     ||
         sm_check_string(token)          ||
         sm_check_string(api_key)        ||
         sm_check_not_null(service_info) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(service_info, 0, sizeof(SM_Service_Info));
 
@@ -989,19 +926,18 @@ int sm_device_get_service_all(
     char post_body[2048] = {0};
     snprintf(post_body, sizeof(post_body), "token=%s&api_key=%s", token, api_key);
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1200) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1200) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get MSG, RELAY, CVR value
@@ -1047,12 +983,12 @@ int sm_device_get_service_all(
     if (cvr_start_time    != NULL) service_info->cvr.start_time = strtoll(cvr_start_time, NULL, 10);
     if (cvr_end_time      != NULL) service_info->cvr.end_time   = strtoll(cvr_end_time,   NULL, 10);
 
-    _return(0);
-
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 
@@ -1070,11 +1006,6 @@ int sm_mec_send_message(
         const char * target_id,
         const char * message) {
 
-    int _ret;
-    char * post_body = NULL;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-
     // check arguments
     if (sm_check_string(server_url) ||
         sm_check_string(token)      ||
@@ -1082,7 +1013,7 @@ int sm_mec_send_message(
         sm_check_string(api_secret) ||
         sm_check_string(target_id)  ||
         sm_check_string(message)    != 0) {
-        _return(-1);
+        return -1;
     }
 
     if (qos != SM_MQTT_OQS_AT_MOST_ONCE  &&
@@ -1093,7 +1024,7 @@ int sm_mec_send_message(
             STRINGIFY(SM_MQTT_OQS_AT_LEAST_ONCE),   SM_MQTT_OQS_AT_LEAST_ONCE,
             STRINGIFY(SM_MQTT_OQS_AT_EXACTLY_ONCE), SM_MQTT_OQS_AT_EXACTLY_ONCE
         );
-        _return(-1);
+        return -1;
     }
 
     if (send_type != SM_MQTT_SEND_TYPE_RELIABLE &&
@@ -1102,12 +1033,12 @@ int sm_mec_send_message(
             STRINGIFY(SM_MQTT_SEND_TYPE_RELIABLE), SM_MQTT_SEND_TYPE_RELIABLE,
             STRINGIFY(SM_MQTT_SEND_TYPE_REALTIME), SM_MQTT_SEND_TYPE_REALTIME
         );
-        _return(-1);
+        return -1;
     }
 
     if (expire < 0) {
         printf("%s: expire (%ld) should not be negative\n", __func__, expire);
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -1121,10 +1052,10 @@ int sm_mec_send_message(
 
     // set post body
     size_t post_body_len = strlen(message) + 512;
-    post_body = (char *) calloc(post_body_len, sizeof(char));
+    char * post_body = (char *) calloc(post_body_len, sizeof(char));
     if (post_body == NULL) {
         printf("%s: out of memory\n", __func__);
-        _return(-1);
+        return -1;
     }
     snprintf(post_body, post_body_len,
         "token=%s&api_key=%s&api_token=%s&time=%ld&qos=%d&type=%d&expire=%ld&dst=%s&text=%s",
@@ -1139,28 +1070,27 @@ int sm_mec_send_message(
         message
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 2221) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 2221) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
-    _return(0);
-
-_return:
-    if (post_body  != NULL) free((void *)post_body);
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    free((void *)post_body);
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 02. sm_mec_get_message
@@ -1172,9 +1102,6 @@ int sm_mec_get_message(
         long         serial,
         SM_MEC_Message ** mec_message_list) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
     *mec_message_list = NULL;
 
     // check arguments
@@ -1182,12 +1109,12 @@ int sm_mec_get_message(
         sm_check_string(token)      ||
         sm_check_string(api_key)    ||
         sm_check_string(api_secret) != 0) {
-        _return(-1);
+        return -1;
     }
 
     if (serial < 0) {
         printf("%s: serial (%ld) should not be negative\n", __func__, serial);
-        _return(-1);
+        return -1;
     }
 
     // set URL
@@ -1210,19 +1137,18 @@ int sm_mec_get_message(
         serial
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 2222) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 2222) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     // get 'ret_msg.messages' and convert into linked list
@@ -1253,7 +1179,8 @@ int sm_mec_get_message(
         if (ptr == NULL) {
             printf("%s: out of memory\n", __func__);
             sm_mec_free_message(root);
-            _return(-1);
+            result = -1;
+            goto end;
         }
 
         // set message entry
@@ -1269,12 +1196,13 @@ int sm_mec_get_message(
 
     // set mec_message_list
     *mec_message_list = root;
-    _return(0);
 
-_return:
-    if (root_value != NULL) json_value_free(root_value);
-    if (ctx        != NULL) khttp_destroy(ctx);
-    return _ret;
+    // success
+    result = 0;
+end:
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
 
 // 03. sm_mec_free_message
@@ -1428,18 +1356,13 @@ int sm_qiwo_device_registration(
         const char * vendor_cert,
         SM_Device_Account * device_account) {
 
-    int _ret;
-    khttp_ctx * ctx = NULL;
-    JSON_Value * root_value = NULL;
-    char * vendor_cert_url_encode = NULL;
-
     // check arguments
     if (sm_check_string(server_url)       ||
         sm_check_string(device_mac)       ||
         sm_check_string(product_name)     ||
         sm_check_string(vendor_cert)      ||
         sm_check_not_null(device_account) != 0) {
-        _return(-1);
+        return -1;
     }
     memset(device_account, 0, sizeof(SM_Device_Account));
 
@@ -1447,8 +1370,10 @@ int sm_qiwo_device_registration(
     char url[SM_URL_LEN] = {0};
     snprintf(url, sizeof(url), "%s/v3/device/registration", server_url);
 
+    // 'vendor_cert' url encode
+    char * vendor_cert_url_encode = NULL;   // need to be free
     if (sm_url_encode(vendor_cert, &vendor_cert_url_encode) != 0) {
-        _return(-1);
+        return -1;
     }
 
     // set post body
@@ -1460,19 +1385,18 @@ int sm_qiwo_device_registration(
         vendor_cert_url_encode
     );
 
-    ctx = khttp_new();
+    khttp_ctx * ctx = khttp_new();
     khttp_set_uri(ctx, url);
     khttp_set_method(ctx, KHTTP_POST);
     khttp_ssl_skip_auth(ctx);
     khttp_set_post_data(ctx, post_body);
 
+    JSON_Value * root_value = NULL;
     JSON_Object * json_body = NULL;
-    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
-    if (ret != 1222) {
-        if (ctx->body != NULL) {
-            printf("body = %s\n", (const char *)ctx->body);
-        }
-        _return(ret);
+    int result = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (result != 1222) {
+        printf("body = %s\n", ctx->body);
+        goto end;
     }
 
     const char * mac  = json_object_dotget_string(json_body, "info.mac");
@@ -1489,11 +1413,11 @@ int sm_qiwo_device_registration(
     if (cert != NULL) strncpy(device_account->cert, cert, SM_DEVICE_CERT_LEN);
     if (pkey != NULL) strncpy(device_account->pkey, pkey, SM_DEVICE_PKEY_LEN);
 
-    _return(0);
-
-_return:
-    if (root_value             != NULL) json_value_free(root_value);
-    if (ctx                    != NULL) khttp_destroy(ctx);
-    if (vendor_cert_url_encode != NULL) free((void *) vendor_cert_url_encode);
-    return _ret;
+    // success
+    result = 0;
+end:
+    free((void *) vendor_cert_url_encode);
+    json_value_free(root_value);
+    khttp_destroy(ctx);
+    return result;
 }
