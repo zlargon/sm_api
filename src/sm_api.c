@@ -16,12 +16,12 @@
 #define sm_check_string(var) __sm_check_string(var, STRINGIFY(var), __func__)
 #define sm_check_not_null(var) __sm_check_not_null(var, STRINGIFY(var), __func__)
 
-int __sm_check_string(const char * var, const char * var_name, const char * func);
-int __sm_check_not_null(const void * var, const char * var_name, const char * func);
-int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func);
-int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
-int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time);
-int sm_url_encode(const char * str, char ** url_encode);
+static int __sm_check_string(const char * var, const char * var_name, const char * func);
+static int __sm_check_not_null(const void * var, const char * var_name, const char * func);
+static int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func);
+static int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
+static int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time);
+static int sm_url_encode(const char * str, char ** url_encode);
 
 
 /** USER API **/
@@ -1228,7 +1228,7 @@ void sm_mec_free_message(SM_MEC_Message * mec_message) {
 
 /** Internal Function **/
 
-int __sm_check_string(const char * var, const char * var_name, const char * func) {
+static int __sm_check_string(const char * var, const char * var_name, const char * func) {
     if (var == NULL || strlen(var) <= 0) {
         printf("%s: '%s' should not be NULL or empty\n", func, var_name); // Error Level
         return -1;
@@ -1236,7 +1236,7 @@ int __sm_check_string(const char * var, const char * var_name, const char * func
     return 0;
 }
 
-int __sm_check_not_null(const void * var, const char * var_name, const char * func) {
+static int __sm_check_not_null(const void * var, const char * var_name, const char * func) {
     if (var == NULL) {
         printf("%s: '%s' should not be NULL or empty\n", func, var_name); // Error Level
         return -1;
@@ -1244,7 +1244,7 @@ int __sm_check_not_null(const void * var, const char * var_name, const char * fu
     return 0;
 }
 
-int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]) {
+static int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]) {
     // check arguments
     if (sm_check_string(string) ||
         sm_check_not_null(sha1) != 0) {
@@ -1265,7 +1265,7 @@ int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]) {
     return 0;
 }
 
-int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time) {
+static int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time) {
     if (sm_check_string(api_secret)     ||
         sm_check_not_null(api_token)    ||
         sm_check_not_null(current_time) != 0) {
@@ -1280,7 +1280,7 @@ int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN
     return sm_crypto_SHA1((const char*)string, api_token);
 }
 
-int sm_url_encode(const char * str, char ** url_encode) {
+static int sm_url_encode(const char * str, char ** url_encode) {
     static const char hex[] = "0123456789ABCDEF";
 
     *url_encode = NULL;
@@ -1312,7 +1312,7 @@ int sm_url_encode(const char * str, char ** url_encode) {
     return 0;
 }
 
-int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func) {
+static int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func) {
     *json_value  = NULL;
     *json_object = NULL;
 
