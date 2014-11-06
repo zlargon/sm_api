@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <openssl/sha.h>
 #include "sm_api.h"
 
@@ -21,6 +22,7 @@ int __sm_check_not_null(const void * var, const char * var_name, const char * fu
 int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func);
 int sm_crypto_SHA1(const char * string, char sha1[/* SM_SHA1_LEN */]);
 int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN */], time_t * current_time);
+int sm_url_encode(const char * str, char ** url_encode);
 
 
 /** USER API **/
@@ -1350,6 +1352,38 @@ int sm_generate_api_token(const char * api_secret, char api_token[/* SM_SHA1_LEN
     return sm_crypto_SHA1((const char*)string, api_token);
 }
 
+int sm_url_encode(const char * str, char ** url_encode) {
+    static const char hex[] = "0123456789ABCDEF";
+
+    *url_encode = NULL;
+    if (sm_check_string(str) != 0) {
+        return -1;
+    }
+
+    char * buf = (char *) calloc(strlen(str) * 3 + 1, sizeof(char));
+    if (buf == NULL) {
+        printf("%s: out of memory\n", __func__);
+        return -1;
+    }
+
+    int i, j = 0;
+    for (i = 0; str[i] != '\0'; i++) {
+
+        if (isalnum(str[i]) || str[i] == '-' || str[i] == '_' || str[i] == '.' || str[i] == '~') {
+            buf[j++] = str[i];
+        } else if (str[i] == ' ') {
+            buf[j++] = '+';
+        } else {
+            buf[j++] = '%';
+            buf[j++] = hex[(str[i] >> 4) & 0xF];
+            buf[j++] = hex[str[i] & 0xF];
+        }
+    }
+
+    *url_encode = buf;
+    return 0;
+}
+
 int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** json_object, const char * func) {
     *json_value  = NULL;
     *json_object = NULL;
@@ -1384,4 +1418,82 @@ int sm_http_perform(khttp_ctx * ctx, JSON_Value ** json_value, JSON_Object ** js
 
     // return status code
     return (int) json_object_dotget_number(json_body, "status.code");
+}
+
+// sm_qiwo_device_registration
+int sm_qiwo_device_registration(
+        const char * server_url,
+        const char * device_mac,
+        const char * product_name,
+        const char * vendor_cert,
+        SM_Device_Account * device_account) {
+
+    int _ret;
+    khttp_ctx * ctx = NULL;
+    JSON_Value * root_value = NULL;
+    char * vendor_cert_url_encode = NULL;
+
+    // check arguments
+    if (sm_check_string(server_url)       ||
+        sm_check_string(device_mac)       ||
+        sm_check_string(product_name)     ||
+        sm_check_string(vendor_cert)      ||
+        sm_check_not_null(device_account) != 0) {
+        _return(-1);
+    }
+    memset(device_account, 0, sizeof(SM_Device_Account));
+
+    // set URL
+    char url[SM_URL_LEN] = {0};
+    snprintf(url, sizeof(url), "%s/v3/device/registration", server_url);
+
+    if (sm_url_encode(vendor_cert, &vendor_cert_url_encode) != 0) {
+        _return(-1);
+    }
+
+    // set post body
+    char post_body[2048] = {0};
+    snprintf(post_body, 2048,
+        "mac=%s&productname=%s&vendor_cert=%s",
+        device_mac,
+        product_name,
+        vendor_cert_url_encode
+    );
+
+    ctx = khttp_new();
+    khttp_set_uri(ctx, url);
+    khttp_set_method(ctx, KHTTP_POST);
+    khttp_ssl_skip_auth(ctx);
+    khttp_set_post_data(ctx, post_body);
+
+    JSON_Object * json_body = NULL;
+    int ret = sm_http_perform(ctx, &root_value, &json_body, __func__);
+    if (ret != 1222) {
+        if (ctx->body != NULL) {
+            printf("body = %s\n", (const char *)ctx->body);
+        }
+        _return(ret);
+    }
+
+    const char * mac  = json_object_dotget_string(json_body, "info.mac");
+    const char * gid  = json_object_dotget_string(json_body, "info.gid");
+    const char * pwd  = json_object_dotget_string(json_body, "info.pwd");
+    const char * pin  = json_object_dotget_string(json_body, "info.pin");
+    const char * cert = json_object_dotget_string(json_body, "keystore.cert");
+    const char * pkey = json_object_dotget_string(json_body, "keystore.pkey");
+
+    if (mac  != NULL) strncpy(device_account->mac,  mac,  SM_DEVICE_MAC_LEN);
+    if (gid  != NULL) strncpy(device_account->gid,  gid,  SM_DEVICE_GID_LEN);
+    if (pwd  != NULL) strncpy(device_account->pwd,  pwd,  SM_DEVICE_PWD_LEN);
+    if (pin  != NULL) strncpy(device_account->pin,  pin,  SM_DEVICE_PIN_LEN);
+    if (cert != NULL) strncpy(device_account->cert, cert, SM_DEVICE_CERT_LEN);
+    if (pkey != NULL) strncpy(device_account->pkey, pkey, SM_DEVICE_PKEY_LEN);
+
+    _return(0);
+
+_return:
+    if (root_value             != NULL) json_value_free(root_value);
+    if (ctx                    != NULL) khttp_destroy(ctx);
+    if (vendor_cert_url_encode != NULL) free((void *) vendor_cert_url_encode);
+    return _ret;
 }

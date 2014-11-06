@@ -248,6 +248,50 @@ int test_device_activation() {
     return ret == 0 ? 0 : -1;
 }
 
+int test_qiwo_device_registration() {
+    puts("\n* sm_qiwo_device_registration");
+    const char * server_url   = "https://serm-test001.securepilot.com";
+    const char * device_mac   = "40618699002f";
+    const char * product_name = "QIWO_CAM";
+    const char * vendor_cert  = "-----BEGIN CERTIFICATE-----\n"
+                                "MIIC9jCCAd6gAwIBAgIIT9Zzrtm3QpgwDQYJKoZIhvcNAQEFBQAwNzEWMBQGA1UE\n"
+                                "AwwNTW9uc3RlclJvb3RDQTEQMA4GA1UECgwHT21uaW5tbzELMAkGA1UEBhMCVFcw\n"
+                                "HhcNMTQwOTA5MTIxNTU1WhcNMjMwNTA2MDI0MDA3WjBCMREwDwYDVQQPDAhSZWNv\n"
+                                "dmVyeTERMA8GA1UEAwwIUUlXT19DQU0xDDAKBgNVBAsMA1NXNjEMMAoGA1UECgwD\n"
+                                "Q1RPMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgcc7gGiMPsM3kOxuJIKci\n"
+                                "8NXFJ0rWCWw0HFjL5iMm/O2c20d+o8OkXXijaIQ2OkeKMyyuQajawr1zN8RpGF2/\n"
+                                "6mN2Q9F3xdYXFXzdOkGOPHntKncyzmhgiqQw1+/VFnrTM7fAS8GrRq8+gBFr6Mq7\n"
+                                "KHxLiIeu1uWamBNcWbnFUwIDAQABo38wfTAdBgNVHQ4EFgQU0KSX3M0x9V5x5i/Z\n"
+                                "lfjrThOMpPwwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBTAIKmj4/cUujtTDplU\n"
+                                "E2f9ebLGyTAOBgNVHQ8BAf8EBAMCBeAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsG\n"
+                                "AQUFBwMEMA0GCSqGSIb3DQEBBQUAA4IBAQA6MsNC8zF5jIJ2cnWYHJArxCucXziU\n"
+                                "XblYS/pylSD2PDffAORkisSeVW6s6pNPv7ouzIjibTUk6uwuZjbHenIoPl5a0c7n\n"
+                                "lTwnH8hV2Iar4JOgmGibRfWt09slAPtFSHIRM+jv3Z1rqh8bQedYkViqQve4QYQ8\n"
+                                "+WkaZNDESEWOd8qeBxtRCrcAPN6ZaRbQvD023PcEeY9fYyz0MscL9ucYGXHNQGFQ\n"
+                                "LYIzL+aXFGW05L94LhgIHWFEK68YvpTRWPX/5vnGTn29FxArfARTSMrYvkDkyfT7\n"
+                                "e2BG4UKTmWhx1skidVQRAQgLXeYAmLhwvnHjd8bAVcVOGEVMw0PwZW8p\n"
+                                "-----END CERTIFICATE-----\n";
+
+    SM_Device_Account device_account = {0};
+    int ret = sm_qiwo_device_registration(
+        server_url,
+        device_mac,
+        product_name,
+        vendor_cert,
+        &device_account
+    );
+
+    printf(" mac = %s\n", device_account.mac);
+    printf(" gid = %s\n", device_account.gid);
+    printf(" pwd = %s\n", device_account.pwd);
+    printf(" pin = %s\n", device_account.pin);
+    printf("cert = %s\n", device_account.cert);
+    printf("pkey = %s\n", device_account.pkey);
+
+    printf("%s %d\n", ret == 0 ? "Success" : "Failure", ret);
+    return ret == 0 ? 0 : -1;
+}
+
 int main() {
     test_device_certificate_login();
     test_device_digest_login();
@@ -258,5 +302,6 @@ int main() {
     test_device_remove_user();
     test_device_reset_default();
     test_device_activation();
+    test_qiwo_device_registration();
     return EXIT_SUCCESS;
 }

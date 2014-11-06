@@ -27,7 +27,10 @@ typedef struct SM_User_Account {
 /** Struct: SM_Device_Account **/
 #define SM_DEVICE_MAC_LEN           256
 #define SM_DEVICE_GID_LEN           256
+#define SM_DEVICE_PWD_LEN           256
 #define SM_DEVICE_PIN_LEN           256
+#define SM_DEVICE_CERT_LEN          2048
+#define SM_DEVICE_PKEY_LEN          2048
 #define SM_DEVICE_TOKEN_LEN         256
 #define SM_DEVICE_EXPIRATION_LEN    256
 #define SM_DEVICE_SERVICE_COUNT     10
@@ -36,7 +39,10 @@ typedef struct SM_User_Account {
 typedef struct SM_Device_Account {
     char mac        [SM_DEVICE_MAC_LEN];
     char gid        [SM_DEVICE_GID_LEN];
+    char pwd        [SM_DEVICE_PWD_LEN];
     char pin        [SM_DEVICE_PIN_LEN];
+    char cert       [SM_DEVICE_CERT_LEN];
+    char pkey       [SM_DEVICE_PKEY_LEN];
     char token      [SM_DEVICE_TOKEN_LEN];
     char expiration [SM_DEVICE_EXPIRATION_LEN];
     char service_list[SM_DEVICE_SERVICE_COUNT][SM_DEVICE_SERVICE_NAME_LEN];
@@ -443,5 +449,24 @@ int sm_mec_get_message(
  * @param mec_message
  */
 void sm_mec_free_message(SM_MEC_Message * mec_message);
+
+/*
+ * sm_qiwo_device_registration
+ *
+ * @param server_url
+ * @param device_mac
+ * @param product_name
+ * @param vendor_cert
+ * @return = 0    success
+ *         < 0    parameters failure, HTTP failure or JSON parse failure
+ *         XXX    HTTP error status code
+ *         XXXX   Server Manager error status code
+ */
+int sm_qiwo_device_registration(
+        const char * server_url,
+        const char * device_mac,
+        const char * product_name,
+        const char * vendor_cert,
+        SM_Device_Account * device_account);
 
 #endif
